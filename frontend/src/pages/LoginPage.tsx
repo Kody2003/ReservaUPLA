@@ -1,22 +1,18 @@
 /**
- * LoginPage — Pantalla de inicio de sesión (FASE 3 — LOGIN).
+ * LoginPage — Pantalla de inicio de sesión (AJUSTE A: Rediseño de campos).
  *
- * Diseño de dos paneles:
- *   · Izquierdo (decorativo): foto del campus de la UPLA con overlay azul,
- *     logo, título y pie académico.
- *   · Derecho (funcional): formulario de login + acceso de demostración.
- *
- * Características:
- *   - Validación de cliente antes de enviar (correo requerido y válido,
- *     contraseña requerida). Los errores aparecen junto al campo.  // RN-02
- *   - Toggle mostrar/ocultar contraseña con aria-pressed.
- *   - Bloque demo solo visible en Vite dev (import.meta.env.DEV).
- *     La contraseña NUNCA viaja al frontend; el backend crea el token
- *     sin exponer credenciales.  // LOGIN
- *   - Tras login exitoso: Administrador → "/" ; otros → "/reservas".
- *   - En pantallas < 900 px el panel izquierdo se oculta y aparece el
- *     logo encima del formulario.
- *   - Muestra el mensaje "Tu sesión expiró…" si lo dejó apiClient en sessionStorage.
+ * Características del formulario:
+ *  - Etiquetas en negrita con asterisco rojo de obligatorio ("Correo electrónico *", "Contraseña *").
+ *  - Cajas redondeadas (radio ~12px, altura ~48px) con fondo --superficie y borde --borde.
+ *  - Íconos interiores a la izquierda: sobre para correo y candado para contraseña (SVG inline con aria-hidden).
+ *  - Placeholders suaves: "Ingrese su correo institucional" e "Ingrese su contraseña".
+ *  - Botón interactivo de texto "Mostrar" / "Ocultar" a la derecha de la contraseña en color --primario y negrita.
+ *  - Anillo de foco accesible al enfocar cada campo.
+ *  - Validación didáctica: error visual al perder el foco (onBlur) o al enviar (submit) estando vacío ("Campo obligatorio"),
+ *    o si el formato de correo no es válido ("Ingrese un correo válido"). Sin errores al cargar.
+ *  - Accesibilidad: aria-describedby hacia los mensajes de error y aria-invalid en los inputs.
+ *  - Compatibilidad total con modo claro y oscuro (variables CSS) con contraste WCAG AA.
+ *  - Conserva chips demo (autocompletado visual con puntos "••••••••"), error genérico y redirección por rol.
  */
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,48 +20,59 @@ import { useAuth } from "../contexts/AuthContext";
 import { login, loginDemo, AuthError } from "../services/authService";
 import type { LoginRespuesta } from "../types";
 
-/** Icono de ojo abierto (SVG inline) para el toggle de contraseña. */
-function IconoOjo() {
+/** Correos de los usuarios de demostración precargados en base de datos. */
+const CORREOS_DEMO: Record<string, string> = {
+  Administrador: "marta.quispe@ejemplo.edu.pe",
+  Solicitante: "ana.torres@ejemplo.edu.pe",
+  ResponsableAmbiente: "carlos.huaman@ejemplo.edu.pe",
+  Inactivo: "pedro.salas@ejemplo.edu.pe",
+};
+
+/** Puntos decorativos para el autocompletado visual en modo demo. */
+const PUNTOS_DECORATIVOS = "••••••••";
+
+/** Ícono de sobre / correo (SVG inline). */
+function IconoSobre() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
   );
 }
 
-/** Icono de ojo tachado para indicar "ocultar contraseña". */
-function IconoOjoCerrado() {
+/** Ícono de candado (SVG inline). */
+function IconoCandado() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-      <line x1="1" y1="1" x2="23" y2="23"/>
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   );
 }
 
 export function LoginPage() {
-  const navigate     = useNavigate();
+  const navigate = useNavigate();
   const { iniciarSesion } = useAuth();
 
   // --- Campos del formulario ---
-  const [correo,     setCorreo]     = useState("");
+  const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
-  const [verPass,    setVerPass]    = useState(false);
+  const [verPass, setVerPass] = useState(false);
 
-  // --- Errores de validación por campo ---
-  const [errorCorreo,     setErrorCorreo]     = useState("");
+  // --- Errores por campo ---
+  const [errorCorreo, setErrorCorreo] = useState("");
   const [errorContrasena, setErrorContrasena] = useState("");
 
   // --- Estado de envío ---
-  const [cargando,  setCargando]  = useState(false);
+  const [cargando, setCargando] = useState(false);
   const [errorGral, setErrorGral] = useState("");
 
-  // Referencia para enfocar el primer campo con error
-  const refCorreo     = useRef<HTMLInputElement>(null);
+  // Referencias para foco accesible
+  const refCorreo = useRef<HTMLInputElement>(null);
   const refContrasena = useRef<HTMLInputElement>(null);
 
-  // Muestra el mensaje de sesión expirada que dejó apiClient
+  // Mensaje de sesión expirada
   useEffect(() => {
     try {
       const msg = sessionStorage.getItem("reservaupla.mensajeLogin");
@@ -76,7 +83,7 @@ export function LoginPage() {
     } catch { /* nada */ }
   }, []);
 
-  /** Redirige según el rol del usuario recién autenticado. */
+  /** Redirige según el rol tras login exitoso. */
   function redirigirSegunRol(resp: LoginRespuesta) {
     iniciarSesion(resp);
     if (resp.rol === "Administrador") {
@@ -86,38 +93,54 @@ export function LoginPage() {
     }
   }
 
-  /** Valida los campos y retorna true si no hay errores. */
-  function validar(): boolean {
-    let ok = true;
-    setErrorCorreo("");
-    setErrorContrasena("");
-
-    if (!correo.trim()) {
-      setErrorCorreo("El correo es obligatorio.");  // RN-02
-      ok = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
-      setErrorCorreo("Ingresa un correo electrónico válido.");
-      ok = false;
+  /** Regla de validación del correo: vacío -> "Campo obligatorio", inválido -> "Ingrese un correo válido". */
+  function validarFormatoCorreo(valor: string): string {
+    if (!valor.trim()) return "Campo obligatorio";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim())) {
+      return "Ingrese un correo válido";
     }
-
-    if (!contrasena) {
-      setErrorContrasena("La contraseña es obligatoria.");  // RN-02
-      ok = false;
-    }
-
-    if (!ok) {
-      // Enfoca el primer campo con error para accesibilidad
-      if (errorCorreo || !correo.trim()) refCorreo.current?.focus();
-      else refContrasena.current?.focus();
-    }
-    return ok;
+    return "";
   }
 
-  /** Maneja el envío del formulario de login. */
+  /** Regla de validación de la contraseña: vacía -> "Campo obligatorio". */
+  function validarFormatoContrasena(valor: string): string {
+    if (!valor) return "Campo obligatorio";
+    return "";
+  }
+
+  /** Validación al perder el foco (onBlur). */
+  function handleBlurCorreo() {
+    setErrorCorreo(validarFormatoCorreo(correo));
+  }
+
+  function handleBlurContrasena() {
+    setErrorContrasena(validarFormatoContrasena(contrasena));
+  }
+
+  /** Valida el formulario antes del envío manual. */
+  function validarFormulario(): boolean {
+    const errC = validarFormatoCorreo(correo);
+    const errP = validarFormatoContrasena(contrasena);
+
+    setErrorCorreo(errC);
+    setErrorContrasena(errP);
+
+    if (errC) {
+      refCorreo.current?.focus();
+      return false;
+    }
+    if (errP) {
+      refContrasena.current?.focus();
+      return false;
+    }
+    return true;
+  }
+
+  /** Envío manual con credenciales escritas por el usuario. */
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setErrorGral("");
-    if (!validar()) return;
+    if (!validarFormulario()) return;
 
     setCargando(true);
     try {
@@ -135,13 +158,18 @@ export function LoginPage() {
   }
 
   /**
-   * Acceso de demostración: llama a POST /api/auth/demo con el rol.
-   * Solo disponible en desarrollo (import.meta.env.DEV).
-   * La contraseña NUNCA viaja al frontend; el backend la maneja internamente.
-   * // LOGIN
+   * Acceso de demostración con chips:
+   * Rellena visualmente correo y contraseña decorativa ("••••••••"), luego llama a demo.
+   * // LOGIN // DEMO
    */
-  async function handleDemo(rol: string) {
+  async function handleChipDemo(rol: string) {
     setErrorGral("");
+    setErrorCorreo("");
+    setErrorContrasena("");
+
+    setCorreo(CORREOS_DEMO[rol] ?? "");
+    setContrasena(PUNTOS_DECORATIVOS);
+
     setCargando(true);
     try {
       const resp = await loginDemo(rol);
@@ -163,7 +191,6 @@ export function LoginPage() {
       <aside className="login-izquierda" aria-hidden="true">
         <div className="login-foto" />
         <div className="login-overlay">
-          {/* Logo + nombre de la app */}
           <div className="login-marca-izq">
             <img
               src="/img/upla-logo.png"
@@ -173,7 +200,6 @@ export function LoginPage() {
             <span className="login-nombre-app">ReservaUPLA</span>
           </div>
 
-          {/* Título central */}
           <div className="login-bienvenida">
             <p className="login-bienvenida-label">Bienvenido a:</p>
             <h1 className="login-bienvenida-titulo">ReservaUPLA.</h1>
@@ -182,7 +208,6 @@ export function LoginPage() {
             </p>
           </div>
 
-          {/* Pie de página académico */}
           <p className="login-pie-izq">
             Proyecto académico · Construcción de Software · 2026
           </p>
@@ -193,81 +218,106 @@ export function LoginPage() {
       <main className="login-derecha">
         <div className="login-form-contenedor">
 
-          {/* Logo visible solo en móvil (< 900 px) cuando el panel izquierdo se oculta */}
+          {/* Logo visible solo en móvil (< 900 px) */}
           <div className="login-logo-movil" aria-hidden="true">
             <img src="/img/upla-logo.png" alt="Logo UPLA" />
             <span>ReservaUPLA</span>
           </div>
 
-          {/* Encabezado del formulario */}
           <p className="login-titulo-panel">Bienvenido</p>
           <h2 className="login-subtitulo-panel">Iniciar sesión</h2>
           <p className="login-desc-panel">
             Ingresa tus credenciales institucionales para continuar.
           </p>
 
-          {/* Mensaje de error global (sesión expirada, credenciales incorrectas, etc.) */}
+          {/* Alerta general del servidor */}
           {errorGral && (
-            <div className="alerta alerta-error" role="alert">
+            <div className="alerta alerta-error" role="alert" style={{ marginBottom: "1.25rem" }}>
               <span>{errorGral}</span>
               <button className="alerta-cerrar" onClick={() => setErrorGral("")} aria-label="Cerrar">×</button>
             </div>
           )}
 
-          {/* Formulario de login */}
+          {/* Formulario de login con campos rediseñados (AJUSTE A) */}
           <form onSubmit={handleSubmit} noValidate>
-            {/* Campo correo */}
-            <div className={`campo${errorCorreo ? " campo-con-error" : ""}`} style={{ marginBottom: "0.75rem" }}>
-              <label htmlFor="correo">Correo electrónico</label>
-              <input
-                id="correo"
-                ref={refCorreo}
-                type="email"
-                autoComplete="username"
-                value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
-                disabled={cargando}
-                placeholder="tu.correo@upla.edu.pe"
-                aria-describedby={errorCorreo ? "error-correo" : undefined}
-                aria-invalid={!!errorCorreo}
-              />
+            {/* Campo Correo electrónico */}
+            <div className="login-campo-grupo">
+              <label htmlFor="correo" className="login-campo-label">
+                Correo electrónico <span className="login-asterisco" aria-hidden="true">*</span>
+              </label>
+              <div className={`login-input-caja ${errorCorreo ? "con-error" : ""}`}>
+                <span className="login-input-icono" aria-hidden="true">
+                  <IconoSobre />
+                </span>
+                <input
+                  id="correo"
+                  ref={refCorreo}
+                  type="email"
+                  autoComplete="username"
+                  placeholder="Ingrese su correo institucional"
+                  className="login-input-campo"
+                  value={correo}
+                  onChange={(e) => {
+                    setCorreo(e.target.value);
+                    if (errorCorreo) setErrorCorreo(validarFormatoCorreo(e.target.value));
+                  }}
+                  onBlur={handleBlurCorreo}
+                  disabled={cargando}
+                  aria-describedby={errorCorreo ? "error-correo" : undefined}
+                  aria-invalid={Boolean(errorCorreo)}
+                />
+              </div>
               {errorCorreo && (
-                <p id="error-correo" className="campo-error" role="alert">{errorCorreo}</p>
+                <p id="error-correo" className="login-error-texto" role="alert">
+                  {errorCorreo}
+                </p>
               )}
             </div>
 
-            {/* Campo contraseña con toggle ver/ocultar */}
-            <div className={`campo${errorContrasena ? " campo-con-error" : ""}`} style={{ marginBottom: "1.25rem" }}>
-              <label htmlFor="contrasena">Contraseña</label>
-              <div className="campo-password">
+            {/* Campo Contraseña */}
+            <div className="login-campo-grupo" style={{ marginBottom: "1.5rem" }}>
+              <label htmlFor="contrasena" className="login-campo-label">
+                Contraseña <span className="login-asterisco" aria-hidden="true">*</span>
+              </label>
+              <div className={`login-input-caja ${errorContrasena ? "con-error" : ""}`}>
+                <span className="login-input-icono" aria-hidden="true">
+                  <IconoCandado />
+                </span>
                 <input
                   id="contrasena"
                   ref={refContrasena}
                   type={verPass ? "text" : "password"}
                   autoComplete="current-password"
+                  placeholder="Ingrese su contraseña"
+                  className="login-input-campo"
                   value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
+                  onChange={(e) => {
+                    setContrasena(e.target.value);
+                    if (errorContrasena) setErrorContrasena(validarFormatoContrasena(e.target.value));
+                  }}
+                  onBlur={handleBlurContrasena}
                   disabled={cargando}
                   aria-describedby={errorContrasena ? "error-contrasena" : undefined}
-                  aria-invalid={!!errorContrasena}
+                  aria-invalid={Boolean(errorContrasena)}
                 />
-                {/* Botón toggle: no envía el formulario (type="button") */}
                 <button
                   type="button"
-                  className="btn-toggle-pass"
+                  className="login-btn-mostrar"
                   aria-pressed={verPass}
                   aria-label={verPass ? "Ocultar contraseña" : "Mostrar contraseña"}
                   onClick={() => setVerPass((v) => !v)}
                 >
-                  {verPass ? <IconoOjoCerrado /> : <IconoOjo />}
+                  {verPass ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
               {errorContrasena && (
-                <p id="error-contrasena" className="campo-error" role="alert">{errorContrasena}</p>
+                <p id="error-contrasena" className="login-error-texto" role="alert">
+                  {errorContrasena}
+                </p>
               )}
             </div>
 
-            {/* Botón de envío */}
+            {/* Botón de ingreso */}
             <button
               type="submit"
               className="btn btn-primario btn-login"
@@ -277,25 +327,17 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* ── Bloque de acceso demo (solo en desarrollo) ── // LOGIN */}
+          {/* Chips demo (solo en desarrollo) // LOGIN // DEMO */}
           {import.meta.env.DEV && (
             <div className="demo-bloque">
-              <p className="demo-titulo">Acceso de demostración</p>
-              {/*
-                Por qué esto es seguro:
-                  - La contraseña NUNCA viaja al frontend.
-                  - El endpoint POST /api/auth/demo no existe en producción
-                    (el controlador solo se registra si IsDevelopment()).
-                  - El token generado tiene la misma expiración corta (60 min)
-                    que un login normal.
-              */}
+              <p className="demo-titulo">Acceso rápido de demostración</p>
               <div className="demo-botones">
                 {(
                   [
-                    { rol: "Administrador",        label: "Administrador" },
-                    { rol: "Solicitante",           label: "Solicitante" },
-                    { rol: "ResponsableAmbiente",   label: "Resp. de ambiente" },
-                    { rol: "Inactivo",              label: "Usuario inactivo" },
+                    { rol: "Administrador", label: "Administrador" },
+                    { rol: "Solicitante", label: "Solicitante" },
+                    { rol: "ResponsableAmbiente", label: "Resp. de ambiente" },
+                    { rol: "Inactivo", label: "Usuario inactivo" },
                   ] as const
                 ).map(({ rol, label }) => (
                   <button
@@ -303,7 +345,8 @@ export function LoginPage() {
                     type="button"
                     className="btn-demo"
                     disabled={cargando}
-                    onClick={() => handleDemo(rol)}
+                    onClick={() => handleChipDemo(rol)}
+                    title={`Autocompleta con ${CORREOS_DEMO[rol]} y accede como ${label}`}
                   >
                     {label}
                   </button>

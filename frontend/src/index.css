@@ -1,14 +1,12 @@
 /*
   Estilos globales de ReservaUPLA.
-  FASE 3: Se reemplazó la paleta plana (--tinta, --papel, --acento…) por variables
-  semánticas que soportan modo claro y modo oscuro mediante el atributo data-tema
-  en el elemento <html>.  Todos los colores del UI se leen de estas variables;
-  ningún componente usa valores hexadecimales directos.
+  Paleta semántica institucional UPLA (modo claro / modo oscuro con data-tema en <html>),
+  barra superior institucional fija (AJUSTE B) y campos rediseñados de login (AJUSTE A).
 */
 
 /* ========================================================================
    PALETA — Modo claro (predeterminado)
-   Los valores reflejan la identidad visual de la UPLA (azul institucional).
+   Identidad visual institucional de la UPLA (azul marino + acento azul).
    ======================================================================== */
 :root {
   /* Fondo de página y superficies (cards, tablas, modales) */
@@ -57,8 +55,7 @@
 
 /* ========================================================================
    PALETA — Modo oscuro
-   Se activa cuando el JS (TemaContext) pone data-tema="oscuro" en <html>.
-   Las mismas variables cambian de valor; el CSS de los componentes no cambia.
+   Se activa cuando data-tema="oscuro" está presente en <html>.
    Contrastes ≥ 4.5:1 en todos los textos (WCAG AA).
    ======================================================================== */
 html[data-tema="oscuro"] {
@@ -77,7 +74,7 @@ html[data-tema="oscuro"] {
 
   --avatar-fondo:   #1F3B57;
 
-  /* Estados en modo oscuro — se aclararon para mantener contraste sobre --superficie oscura */
+  /* Estados en modo oscuro */
   --ok:             #3fc97a;
   --ok-fondo:       #0d2f1e;
   --ok-borde:       #1a5e35;
@@ -114,7 +111,7 @@ a { color: var(--primario); }
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
 /* Enlace de saltar al contenido */
-.saltar { position: absolute; left: -999px; top: 0; background: var(--superficie); padding: 0.5rem 1rem; z-index: 20; }
+.saltar { position: absolute; left: -999px; top: 0; background: var(--superficie); padding: 0.5rem 1rem; z-index: 60; }
 .saltar:focus { left: 0; }
 
 /* ========================================================================
@@ -122,26 +119,308 @@ a { color: var(--primario); }
    ======================================================================== */
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* Cabecera de dos filas con --azul-oscuro */
-.cabecera { background: var(--azul-oscuro); color: #fff; padding: 0.75rem 1.5rem 0; }
-.cabecera-fila { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between; }
-.marca { font-size: 1.5rem; margin: 0; letter-spacing: 0.01em; }
+/* ========================================================================
+   BARRA SUPERIOR REDISEÑADA (AJUSTE B)
+   Fija arriba (sticky: top 0), azul marino, logo grande, pestañas en una fila.
+   ======================================================================== */
+.cabecera-upla {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--azul-oscuro);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
 
-/* Navegación por pestañas debajo de la cabecera */
-.menu { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.75rem; }
-.menu a { color: #cfdbe8; text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px 6px 0 0; }
-.menu a:hover { color: #fff; }
-.menu a.active { background: var(--fondo); color: var(--texto); font-weight: 600; }
+.cabecera-upla-contenedor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  min-height: 68px;
+}
 
-.contenido { flex: 1; width: 100%; max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
-.pie { text-align: center; padding: 1rem; font-size: 0.875rem; color: var(--texto-suave); }
+/* Sección izquierda + pestañas en la misma fila */
+.cabecera-seccion-principal {
+  display: flex;
+  align-items: center;
+  gap: 2.25rem;
+  height: 100%;
+}
 
-/* Título de sección con acción a la derecha */
-.titulo-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
+.cabecera-marca-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cabecera-logo-upla {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.cabecera-titulos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.cabecera-titulo-app {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+}
+
+.cabecera-subtitulo-upla {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Pestañas de navegación en una sola fila */
+.cabecera-nav-tabs {
+  display: flex;
+  align-items: stretch;
+  height: 68px;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+}
+
+.cabecera-tab-item {
+  display: flex;
+  align-items: center;
+  padding: 0 1.1rem;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 0.94rem;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  border-radius: 6px 6px 0 0;
+  height: 100%;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.cabecera-tab-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Pestaña activa: negrita con línea inferior de 3px en azul claro (#5AA9E6), sin recuadro blanco */
+.cabecera-tab-item.tab-activa {
+  color: #ffffff;
+  font-weight: 700;
+  border-bottom: 3px solid #5AA9E6;
+  background: transparent;
+}
+
+.cabecera-tab-item:focus-visible {
+  outline: 2px solid #5AA9E6;
+  outline-offset: -2px;
+}
+
+/* Acciones a la derecha: Botón de tema + Chip de usuario */
+.cabecera-acciones-derecha {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.btn-tema-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  padding: 0.38rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-tema-cabecera:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.cabecera-separador-vertical {
+  width: 1px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Menú de usuario desplegable */
+.contenedor-menu-usuario {
+  position: relative;
+}
+
+.chip-usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem 0.25rem 0.35rem;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.chip-usuario:hover,
+.chip-usuario.chip-activo {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.avatar-iniciales {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--avatar-fondo);
+  color: var(--primario);
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.usuario-datos-columna {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.usuario-nombre {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.usuario-rol {
+  font-size: 0.72rem;
+  color: #a9bece;
+}
+
+/* Menú flotante (dropdown) */
+.menu-desplegable {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 215px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  padding: 0.4rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.menu-desplegable-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: var(--texto);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+.menu-desplegable-item:hover,
+.menu-desplegable-item:focus {
+  background: var(--fondo);
+  outline: none;
+}
+
+.menu-desplegable-separador {
+  height: 1px;
+  background: var(--borde);
+  margin: 0.3rem 0;
+}
+
+.menu-item-peligro {
+  color: var(--error) !important;
+}
+.menu-item-peligro:hover,
+.menu-item-peligro:focus {
+  background: var(--error-fondo) !important;
+}
+
+/* Contenido y pie */
+.contenido { flex: 1; width: 100%; max-width: 1020px; margin: 0 auto; padding: 1.75rem 1.5rem; }
+.pie { text-align: center; padding: 1.25rem; font-size: 0.85rem; color: var(--texto-suave); }
+
+/* Título de sección */
+.titulo-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
 .titulo-fila h2 { margin: 0; }
 
 /* ========================================================================
-   FORMULARIOS
+   TARJETAS DE CONFIGURACIÓN
+   ======================================================================== */
+.tarjeta-configuracion {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.opcion-tema-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--superficie);
+  transition: border-color 0.15s, background 0.15s;
+}
+.opcion-tema-card:hover {
+  background: var(--fondo);
+}
+.opcion-tema-card input[type="radio"] {
+  margin-top: 0.25rem;
+  accent-color: var(--primario);
+  cursor: pointer;
+}
+.opcion-tema-card.opcion-tema-seleccionada {
+  border-color: var(--primario);
+  background: var(--fondo);
+  box-shadow: 0 0 0 1px var(--primario);
+}
+.opcion-tema-titulo {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--texto);
+}
+
+/* ========================================================================
+   FORMULARIOS GENERALES
    ======================================================================== */
 .formulario {
   background: var(--superficie); border: 1px solid var(--borde);
@@ -153,7 +432,7 @@ a { color: var(--primario); }
 .campo { display: grid; gap: 0.25rem; }
 .campo label { font-weight: 600; font-size: 0.9rem; color: var(--texto); }
 
-/* Inputs / selects */
+/* Inputs / selects generales */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -181,7 +460,6 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(26, 103, 163, 0.2);
 }
 
-/* Campo con validación fallida */
 .campo-con-error input, .campo-con-error select { border-color: var(--error); background-color: var(--error-fondo); }
 .campo-error { margin: 0; color: var(--error); font-size: 0.875rem; }
 .ayuda { margin: 0; font-size: 0.875rem; color: var(--texto-suave); }
@@ -192,6 +470,124 @@ select:focus {
   gap: 0.75rem; align-items: end;
   background: var(--superficie); border: 1px solid var(--borde);
   border-radius: 10px; padding: 1rem; margin-bottom: 1rem;
+}
+
+/* ========================================================================
+   CAMPOS REDISEÑADOS DEL LOGIN (AJUSTE A)
+   ======================================================================== */
+.login-campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.15rem;
+  text-align: left;
+}
+
+.login-campo-label {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.login-asterisco {
+  color: var(--error);
+  font-weight: 700;
+}
+
+/* Caja del input: redondeada (~12px), altura (~48px), fondo superficie */
+.login-input-caja {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  height: 48px;
+  padding: 0 0.85rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* Foco con anillo visible */
+.login-input-caja:focus-within {
+  border-color: var(--primario);
+  box-shadow: 0 0 0 3px rgba(26, 103, 163, 0.25);
+}
+
+/* Estado de error: borde rojo y sombra tenue */
+.login-input-caja.con-error {
+  border-color: var(--error);
+  background-color: var(--error-fondo);
+}
+.login-input-caja.con-error:focus-within {
+  box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.25);
+}
+
+/* Ícono a la izquierda dentro de la caja */
+.login-input-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texto-suave);
+  flex-shrink: 0;
+  margin-right: 0.65rem;
+}
+
+/* Input real dentro de la caja */
+.login-input-campo {
+  flex: 1;
+  height: 100%;
+  border: none !important;
+  background: transparent !important;
+  color: var(--texto) !important;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  width: 100%;
+}
+
+.login-input-campo::placeholder {
+  color: var(--texto-suave);
+  opacity: 0.8;
+}
+
+/* Botón Mostrar/Ocultar de texto en negrita y color primario */
+.login-btn-mostrar {
+  background: none;
+  border: none;
+  color: var(--primario);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  transition: opacity 0.15s;
+}
+.login-btn-mostrar:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+.login-btn-mostrar:focus-visible {
+  outline: 2px solid var(--primario);
+  outline-offset: 2px;
+}
+
+/* Mensaje de error debajo del campo */
+.login-error-texto {
+  color: var(--error);
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin: 0.2rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 /* ========================================================================
@@ -248,8 +644,6 @@ select:focus {
 
 /* ========================================================================
    ESTADOS DE RESERVA
-   Nota: los colores de texto en modo oscuro son más claros que en modo claro
-   para garantizar contraste ≥ 4.5:1 sobre los fondos oscuros de las celdas.
    ======================================================================== */
 .estado {
   display: inline-block; padding: 0.15rem 0.6rem;
@@ -289,7 +683,7 @@ select:focus {
 .modal-fondo {
   position: fixed; inset: 0;
   background: rgba(10, 28, 47, 0.65);
-  display: grid; place-items: center; padding: 1rem; z-index: 30;
+  display: grid; place-items: center; padding: 1rem; z-index: 70;
 }
 .modal {
   background: var(--superficie); border-radius: 10px; padding: 1.5rem;
@@ -300,7 +694,7 @@ select:focus {
 .modal .acciones { justify-content: flex-end; }
 
 /* ========================================================================
-   SPINNER de carga (usado en RutaProtegida mientras valida el token)
+   SPINNER de carga
    ======================================================================== */
 .spinner-contenedor { display: flex; justify-content: center; align-items: center; height: 60vh; }
 .spinner {
@@ -314,7 +708,6 @@ select:focus {
 
 /* ========================================================================
    PÁGINA DE LOGIN (LoginPage)
-   Panel izquierdo decorativo + panel derecho con formulario.
    ======================================================================== */
 .login-pagina {
   min-height: 100vh;
@@ -322,7 +715,6 @@ select:focus {
   grid-template-columns: 1fr 1fr;
 }
 
-/* Panel izquierdo: imagen del campus con overlay */
 .login-izquierda {
   position: relative;
   overflow: hidden;
@@ -348,15 +740,12 @@ select:focus {
   background: rgba(255,255,255,0.1);
 }
 .login-nombre-app { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.01em; }
-.login-bienvenida {
-  text-align: left;
-}
+.login-bienvenida { text-align: left; }
 .login-bienvenida-label { font-size: 0.75rem; letter-spacing: 0.15em; opacity: 0.8; text-transform: uppercase; margin: 0 0 0.5rem; }
 .login-bienvenida-titulo { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: 0 0 0.75rem; }
 .login-bienvenida-sub { font-size: 1rem; opacity: 0.85; margin: 0; }
 .login-pie-izq { font-size: 0.8rem; opacity: 0.65; }
 
-/* Panel derecho: formulario */
 .login-derecha {
   display: flex; flex-direction: column; justify-content: center; align-items: center;
   padding: 3rem 2.5rem;
@@ -365,7 +754,6 @@ select:focus {
 }
 .login-form-contenedor { width: 100%; max-width: 380px; }
 
-/* Logo + título solo visible cuando el panel izquierdo está oculto (< 900px) */
 .login-logo-movil {
   display: none;
   align-items: center; gap: 0.5rem;
@@ -378,20 +766,14 @@ select:focus {
 .login-subtitulo-panel { font-size: 1.75rem; font-weight: 800; color: var(--texto); margin: 0 0 0.25rem; }
 .login-desc-panel { font-size: 0.95rem; color: var(--texto-suave); margin: 0 0 1.75rem; }
 
-/* Contenedor de campo con toggle de contraseña */
-.campo-password { position: relative; }
-.campo-password input { padding-right: 2.75rem; }
-.btn-toggle-pass {
-  position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
-  background: none; border: none; cursor: pointer; padding: 0.25rem;
-  color: var(--texto-suave); display: flex; align-items: center;
+.btn-login {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 10px;
+  font-weight: 700;
 }
-.btn-toggle-pass:hover { color: var(--texto); }
 
-/* Botón de envío del login: ancho completo */
-.btn-login { width: 100%; padding: 0.7rem; font-size: 1rem; }
-
-/* Bloque de acceso de demostración */
 .demo-bloque {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
@@ -404,30 +786,73 @@ select:focus {
   padding: 0.4rem 0.5rem; border-radius: 6px;
   border: 1px solid var(--borde); background: var(--superficie);
   color: var(--texto-suave); cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 .btn-demo:hover:not(:disabled) { background: var(--fondo); color: var(--texto); }
 .btn-demo:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ========================================================================
-   RESPONSIVE
+   RESPONSIVE — Adaptabilidad móvil e intermedia (AJUSTE B)
    ======================================================================== */
 @media (max-width: 900px) {
-  /* En pantallas pequeñas el panel izquierdo decorativo se oculta */
   .login-izquierda { display: none; }
   .login-pagina { grid-template-columns: 1fr; }
   .login-logo-movil { display: flex; }
+
+  /* Barra superior compacta */
+  .cabecera-subtitulo-upla { display: none; }
+  .cabecera-seccion-principal { gap: 1.25rem; }
+  .btn-tema-texto { display: none; }
+  .usuario-rol { font-size: 0.7rem; }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
+  .cabecera-upla-contenedor {
+    flex-wrap: wrap;
+    padding: 0.5rem 1rem 0;
+    min-height: auto;
+  }
+  .cabecera-seccion-principal {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .cabecera-marca-grupo {
+    flex: 1;
+  }
+  .cabecera-logo-upla {
+    height: 40px;
+  }
+  .cabecera-titulo-app {
+    font-size: 1.25rem;
+  }
+  .cabecera-nav-tabs {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    height: 44px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    margin-top: 0.35rem;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cabecera-tab-item {
+    flex-shrink: 0;
+    padding: 0 0.85rem;
+    font-size: 0.88rem;
+  }
+  .usuario-datos-columna {
+    display: none;
+  }
+  .chip-usuario {
+    padding: 0.2rem 0.5rem 0.2rem 0.25rem;
+  }
   .fila-horas { grid-template-columns: 1fr; }
   .detalle { grid-template-columns: 1fr; }
-  .cabecera { padding: 0.75rem 1rem 0; }
   .contenido { padding: 1rem; }
   .demo-botones { grid-template-columns: 1fr; }
 }
 
-/* Respeta la preferencia de movimiento reducido del sistema operativo */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }

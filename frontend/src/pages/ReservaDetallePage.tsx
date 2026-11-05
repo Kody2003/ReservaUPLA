@@ -1,3 +1,18 @@
+/**
+ * ReservaDetallePage — Consulta de detalle y cambio de estado de reserva (RF-06, RF-07).
+ *
+ * Adaptaciones por rol (FASE 4 + AJUSTE 2):
+ *   · Administrador (RN-05):
+ *       - Visualiza el solicitante original.
+ *       - Dispone de botones para Aprobar y Rechazar la reserva (si está Pendiente).
+ *       - Puede Cancelar la reserva.
+ *   · Solicitante:
+ *       - Oculta los botones Aprobar y Rechazar (solo visibles para Administrador // RN-05).
+ *       - Oculta datos redundantes de otros usuarios.
+ *       - Solo puede cancelar sus propias reservas (verificado por UI y reforzado por backend en Fase 2).
+ *   · Regla RN-06:
+ *       - Una reserva Rechazada no permite ninguna modificación adicional.
+ */
 import { useCallback, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { AlertMessage } from "../components/ui/AlertMessage";
@@ -19,14 +34,6 @@ const TEXTOS: Record<Accion, { titulo: string; mensaje: string; boton: string; p
   Cancelada: { titulo: "¿Cancelar esta reserva?", mensaje: "La reserva quedará cancelada y el horario se liberará.", boton: "Cancelar reserva", peligroso: true },
 };
 
-/**
- * RF-06 y RF-07: detalle de una reserva y cambio de estado con ventana de confirmación.
- *
- * FASE 3 (LOGIN): se reemplazó useClaveAdmin/esAdmin por useAuth().
- *   - esAdmin: el rol viene del token JWT, ya no de la clave en el panel.
- *   - RN-05: los botones Aprobar/Rechazar solo se muestran habilitados al Administrador.
- *   - RN-06: una reserva Rechazada no ofrece acciones (el backend también lo valida).
- */
 export function ReservaDetallePage() {
   const { id = "" } = useParams<{ id: string }>();
   const ubicacion = useLocation();
@@ -35,9 +42,9 @@ export function ReservaDetallePage() {
   const cargar = useCallback(() => reservasService.obtener(id), [id]);
   const { datos: reserva, cargando, error, recargar } = useCargarDatos(cargar);
 
-  // LOGIN: el rol ahora viene del token JWT, no de la clave de administrador
   const { usuario } = useAuth();
-  const esAdmin = usuario?.rol === "Administrador"; // RN-05
+  const esAdmin = usuario?.rol === "Administrador";
+  const esSolicitante = usuario?.rol === "Solicitante";
 
   const [accion, setAccion] = useState<Accion | null>(null);
   const [procesando, setProcesando] = useState(false);
@@ -53,7 +60,7 @@ export function ReservaDetallePage() {
       setMensaje({ tipo: "exito", texto: `La reserva quedó en estado ${accion}.` });
       recargar();
     } catch (err) {
-      setMensaje({ tipo: "error", texto: obtenerMensajeError(err) }); // ej. RN-01, RN-05, RN-06
+      setMensaje({ tipo: "error", texto: obtenerMensajeError(err) });
     } finally {
       setProcesando(false);
       setAccion(null);
@@ -80,7 +87,12 @@ export function ReservaDetallePage() {
           <dl className="detalle">
             <dt>Estado</dt><dd><EstadoBadge estado={reserva.estado} /></dd>
             <dt>Ambiente</dt><dd>{reserva.ambienteNombre}</dd>
-            <dt>Solicitante</dt><dd>{reserva.usuarioNombre}</dd>
+            {/* Oculta solicitante en caso de ser Solicitante // AJUSTE 2 */}
+            {!esSolicitante && (
+              <>
+                <dt>Solicitante</dt><dd>{reserva.usuarioNombre}</dd>
+              </>
+            )}
             <dt>Fecha</dt><dd>{reserva.fecha}</dd>
             <dt>Horario</dt><dd>{reserva.horaInicio} - {reserva.horaFin}</dd>
             <dt>Motivo</dt><dd>{reserva.motivo}</dd>
@@ -89,16 +101,27 @@ export function ReservaDetallePage() {
           {/* RN-06: una Rechazada no se puede modificar */}
           {rechazada && <AlertMessage tipo="info" mensaje="Esta reserva fue rechazada y ya no se puede modificar." />}
 
-          {/* RN-05: aprobar o rechazar solo para Administrador (doble defensa: también el backend lo valida) */}
-          {puedeDecidir && !esAdmin && (
-            <p className="ayuda">Solo un Administrador puede aprobar o rechazar una reserva.</p>
-          )}
-
           <div className="acciones">
-            {/* RN-05: botones Aprobar/Rechazar solo habilitados para Administrador */}
-            <Button disabled={!puedeDecidir || !esAdmin} onClick={() => setAccion("Aprobada")}>Aprobar</Button>
-            <Button variante="peligro" disabled={!puedeDecidir || !esAdmin} onClick={() => setAccion("Rechazada")}>Rechazar</Button>
-            <Button variante="secundario" disabled={!puedeCancelar} onClick={() => setAccion("Cancelada")}>Cancelar reserva</Button>
+            {/* RN-05: Solo el Administrador ve botones Aprobar y Rechazar // AJUSTE 2 */}
+            {esAdmin && (
+              <>
+                <Button disabled={!puedeDecidir} onClick={() => setAccion("Aprobada")}>
+                  Aprobar
+                </Button>
+                <Button variante="peligro" disabled={!puedeDecidir} onClick={() => setAccion("Rechazada")}>
+                  Rechazar
+                </Button>
+              </>
+            )}
+
+            {/* Cancelación disponible para Solicitante (sus reservas) y Administrador/Responsable */}
+            <Button
+              variante="secundario"
+              disabled={!puedeCancelar}
+              onClick={() => setAccion("Cancelada")}
+            >
+              Cancelar reserva
+            </Button>
           </div>
         </>
       )}
