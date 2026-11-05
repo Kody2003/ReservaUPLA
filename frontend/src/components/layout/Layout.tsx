@@ -1,67 +1,54 @@
 /**
- * Layout — Barra superior rediseñada institucional UPLA (AJUSTE B).
+ * Layout — Barra superior rediseñada institucional UPLA (BLOQUE 0 y BLOQUE 2).
  *
- * Estructura de la barra fija superior (position: sticky; top: 0):
- *   · Izquierda:
- *       - Logo UPLA (~48px de alto), sin caja ni fondo.
- *       - "ReservaUPLA" en tamaño grande (~24px, negrita).
- *       - "UNIVERSIDAD PERUANA LOS ANDES" en mayúsculas pequeñas y color suave.
- *   · Centro / izquierda:
- *       - Pestañas en una sola fila, texto blanco suave.
- *       - Pestaña activa: negrita con línea inferior de 3px en azul claro (#5AA9E6) y esquinas superiores redondeadas (sin recuadro blanco).
- *       - Pestañas inactivas: texto blanco suave que se aclara en hover.
- *       - Foco de teclado visible.
- *   · Derecha:
- *       - Botón interactivo "Modo oscuro / Modo claro" con ícono luna/sol.
- *       - Separador vertical fino.
- *       - Chip de usuario con avatar de iniciales, nombre, rol, flecha y menú desplegable accesible.
- *   · Responsive:
- *       - < 900px: se oculta el subtítulo universitario y se compacta el chip.
- *       - < 640px: la barra se compacta y las pestañas se desplazan horizontalmente (overflow-x: auto) sin romper el diseño.
- *   · Pestañas según rol:
- *       - Administrador: Dashboard, Reservas, Ambientes, Usuarios.
- *       - Responsable de Ambiente: Reservas, Ambientes.
- *       - Solicitante: Mis reservas, Nueva reserva.
+ * Correcciones de navegación (BLOQUE 0):
+ *   · Se implementó lógica de ruta activa con useLocation para evitar que "Mis reservas"
+ *     y "Nueva reserva" aparezcan activas simultáneamente en /reservas/nueva.
+ *   · "Mis reservas" / "Reservas" queda activa en /reservas y en /reservas/:id (detalle),
+ *     pero NUNCA en /reservas/nueva.
+ *   · "Nueva reserva" se activa ÚNICAMENTE en /reservas/nueva.
+ *   · aria-current="page" se asigna estrictamente a la única pestaña activa.
+ *
+ * Íconos integrados (BLOQUE 2):
+ *   · Se agregaron íconos contextuales con Icono.tsx a las pestañas y botón de tema.
  */
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTema } from "../../contexts/TemaContext";
+import { Icono } from "../ui/Icono";
 import { MenuUsuario } from "./MenuUsuario";
-
-/** Ícono de sol (SVG inline) para modo claro. */
-function IconoSol() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="5" />
-      <line x1="12" y1="1" x2="12" y2="3" />
-      <line x1="12" y1="21" x2="12" y2="23" />
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-      <line x1="1" y1="12" x2="3" y2="12" />
-      <line x1="21" y1="12" x2="23" y2="12" />
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-    </svg>
-  );
-}
-
-/** Ícono de luna (SVG inline) para modo oscuro. */
-function IconoLuna() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  );
-}
 
 export function Layout() {
   const { usuario } = useAuth();
   const { temaEfectivo, setTema } = useTema();
+  const { pathname } = useLocation();
 
   const esOscuro = temaEfectivo === "oscuro";
 
   function alternarTema() {
     setTema(esOscuro ? "claro" : "oscuro");
+  }
+
+  /**
+   * Determinación estricta de la pestaña activa (BLOQUE 0):
+   * Garantiza que exista UNA SOLA pestaña activa en cualquier momento.
+   */
+  function esRutaActiva(tipo: "dashboard" | "reservas" | "nueva-reserva" | "ambientes" | "usuarios"): boolean {
+    switch (tipo) {
+      case "dashboard":
+        return pathname === "/";
+      case "reservas":
+        // Activa en el listado /reservas y en el detalle /reservas/:id, pero NO en /reservas/nueva
+        return pathname === "/reservas" || (pathname.startsWith("/reservas/") && pathname !== "/reservas/nueva");
+      case "nueva-reserva":
+        return pathname === "/reservas/nueva";
+      case "ambientes":
+        return pathname.startsWith("/ambientes");
+      case "usuarios":
+        return pathname.startsWith("/usuarios");
+      default:
+        return false;
+    }
   }
 
   return (
@@ -70,7 +57,7 @@ export function Layout() {
         Saltar al contenido
       </a>
 
-      {/* Barra superior fija institucional (AJUSTE B) */}
+      {/* Barra superior fija institucional */}
       <header className="cabecera-upla">
         <div className="cabecera-upla-contenedor">
           {/* Bloque Izquierdo + Centro: Logo, Título y Pestañas */}
@@ -88,69 +75,84 @@ export function Layout() {
               </div>
             </div>
 
-            {/* Pestañas de navegación en una sola fila */}
+            {/* Pestañas de navegación en una sola fila (BLOQUE 0) */}
             <nav aria-label="Navegación principal" className="cabecera-nav-tabs">
               {usuario?.rol === "Administrador" && (
                 <>
-                  <NavLink
+                  <Link
                     to="/"
-                    end
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("dashboard") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("dashboard") ? "page" : undefined}
                   >
+                    <Icono nombre="informe" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Dashboard
-                  </NavLink>
-                  <NavLink
+                  </Link>
+                  <Link
                     to="/reservas"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("reservas") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("reservas") ? "page" : undefined}
                   >
+                    <Icono nombre="calendario" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Reservas
-                  </NavLink>
-                  <NavLink
+                  </Link>
+                  <Link
                     to="/ambientes"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("ambientes") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("ambientes") ? "page" : undefined}
                   >
+                    <Icono nombre="edificio" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Ambientes
-                  </NavLink>
-                  <NavLink
+                  </Link>
+                  <Link
                     to="/usuarios"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("usuarios") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("usuarios") ? "page" : undefined}
                   >
+                    <Icono nombre="usuario" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Usuarios
-                  </NavLink>
+                  </Link>
                 </>
               )}
 
               {usuario?.rol === "ResponsableAmbiente" && (
                 <>
-                  <NavLink
+                  <Link
                     to="/reservas"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("reservas") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("reservas") ? "page" : undefined}
                   >
+                    <Icono nombre="calendario" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Reservas
-                  </NavLink>
-                  <NavLink
+                  </Link>
+                  <Link
                     to="/ambientes"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("ambientes") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("ambientes") ? "page" : undefined}
                   >
+                    <Icono nombre="edificio" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Ambientes
-                  </NavLink>
+                  </Link>
                 </>
               )}
 
               {usuario?.rol === "Solicitante" && (
                 <>
-                  <NavLink
+                  <Link
                     to="/reservas"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("reservas") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("reservas") ? "page" : undefined}
                   >
+                    <Icono nombre="calendario" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Mis reservas
-                  </NavLink>
-                  <NavLink
+                  </Link>
+                  <Link
                     to="/reservas/nueva"
-                    className={({ isActive }) => `cabecera-tab-item ${isActive ? "tab-activa" : ""}`}
+                    className={`cabecera-tab-item ${esRutaActiva("nueva-reserva") ? "tab-activa" : ""}`}
+                    aria-current={esRutaActiva("nueva-reserva") ? "page" : undefined}
                   >
+                    <Icono nombre="mas" tamano={16} style={{ marginRight: "0.4rem" }} />
                     Nueva reserva
-                  </NavLink>
+                  </Link>
                 </>
               )}
             </nav>
@@ -165,7 +167,7 @@ export function Layout() {
               aria-label={esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
               title={esOscuro ? "Modo claro" : "Modo oscuro"}
             >
-              {esOscuro ? <IconoSol /> : <IconoLuna />}
+              <Icono nombre={esOscuro ? "sol" : "luna"} tamano={17} />
               <span className="btn-tema-texto">{esOscuro ? "Modo claro" : "Modo oscuro"}</span>
             </button>
 

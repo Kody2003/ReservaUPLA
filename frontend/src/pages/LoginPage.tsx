@@ -17,6 +17,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { Icono } from "../components/ui/Icono";
 import { login, loginDemo, AuthError } from "../services/authService";
 import type { LoginRespuesta } from "../types";
 
@@ -305,9 +306,10 @@ export function LoginPage() {
                   className="login-btn-mostrar"
                   aria-pressed={verPass}
                   aria-label={verPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  title={verPass ? "Ocultar contraseña" : "Mostrar contraseña"}
                   onClick={() => setVerPass((v) => !v)}
                 >
-                  {verPass ? "Ocultar" : "Mostrar"}
+                  <Icono nombre={verPass ? "ojo-tachado" : "ojo"} tamano={18} />
                 </button>
               </div>
               {errorContrasena && (
@@ -336,7 +338,7 @@ export function LoginPage() {
                   [
                     { rol: "Administrador", label: "Administrador" },
                     { rol: "Solicitante", label: "Solicitante" },
-                    { rol: "ResponsableAmbiente", label: "Resp. de ambiente" },
+                    { rol: "ResponsableAmbiente", label: "Responsable de ambiente" },
                     { rol: "Inactivo", label: "Usuario inactivo" },
                   ] as const
                 ).map(({ rol, label }) => (

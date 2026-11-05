@@ -10,6 +10,7 @@
  */
 import { useAuth } from "../contexts/AuthContext";
 import { useTema, type OpcionTema } from "../contexts/TemaContext";
+import { formatearRol } from "../types";
 
 export function ConfiguracionPage() {
   const { usuario } = useAuth();
@@ -41,7 +42,7 @@ export function ConfiguracionPage() {
             <dt>Rol asignado</dt>
             <dd>
               <span className="estado estado-pendiente" style={{ fontWeight: 600 }}>
-                {usuario.rol}
+                {formatearRol(usuario.rol)}
               </span>
             </dd>
 

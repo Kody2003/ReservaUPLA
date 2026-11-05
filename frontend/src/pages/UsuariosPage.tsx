@@ -1,39 +1,26 @@
 /**
- * UsuariosPage — Gestión de cuentas de usuario del sistema (RF-01).
+ * UsuariosPage — Gestión de cuentas de usuario del sistema (RF-01, BLOQUE 1 y BLOQUE 2).
  *
- * Características del rediseño:
- *   · Solo accesible para el Administrador (controlado por RutaProtegida y token JWT).
- *   · Esquema de 2 columnas:
- *       - Columna izquierda: "Registrar usuario" (nombre, correo, contraseña inicial con "Mostrar/Ocultar", rol, activo).
- *       - Columna derecha: "Usuarios registrados" con buscador de texto (nombre/correo), filtro por rol y tabla.
- *   · Roles representados con etiquetas visuales distintivas (Administrador, Solicitante, Responsable de ambiente).
- *   · Estado de cuenta Activo / Inactivo con etiqueta de color (verde / gris) y texto explícito.
- *   · Un único botón de envío ("Registrar usuario").
- *   · Máxima seguridad: las contraseñas y hashes NUNCA se exponen ni se muestran en la tabla.
+ * Características:
+ *   · Formulario unificado con Campo.tsx e Icono.tsx (usuario, correo, candado, filtro).
+ *   · Contraseña inicial con botón Mostrar/Ocultar y validación de seguridad.
+ *   · Validación didáctica: errores visibles solo al interactuar (onBlur) o enviar (submit).
+ *   · Botón único de registro con ícono (+).
+ *   · Tabla con buscador en tiempo real, selector de rol y badges de estado y roles.
  */
 import { useCallback, useMemo, useState, type FormEvent } from "react";
 import { AlertMessage } from "../components/ui/AlertMessage";
 import { Button } from "../components/ui/Button";
-import { SelectInput } from "../components/ui/SelectInput";
+import { Campo } from "../components/ui/Campo";
+import { Icono } from "../components/ui/Icono";
 import { TableList } from "../components/ui/TableList";
-import { TextInput } from "../components/ui/TextInput";
 import { useCargarDatos } from "../hooks/useCargarDatos";
 import { obtenerMensajeError } from "../services/apiClient";
 import { usuariosService } from "../services/usuariosService";
-import { ROLES, type RolUsuario, type Usuario, type Mensaje } from "../types";
+import { ROLES, formatearRol, type RolUsuario, type Usuario, type Mensaje } from "../types";
 
-const OPCIONES_ROL = ROLES.map((r) => ({ valor: r, texto: r }));
+const OPCIONES_ROL = ROLES.map((r) => ({ valor: r, texto: formatearRol(r) }));
 const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** Ícono de lupa para el buscador. */
-function IconoLupa() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
 
 /** Etiqueta de rol con estilo visual institucional. */
 function RolBadge({ rol }: { rol: RolUsuario }) {
@@ -74,6 +61,8 @@ export function UsuariosPage() {
   const [rol, setRol] = useState("");
   const [activo, setActivo] = useState(true);
 
+  // Control de interacción y errores (BLOQUE 1)
+  const [tocado, setTocado] = useState<Record<string, boolean>>({});
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState<Mensaje | null>(null);
@@ -82,7 +71,11 @@ export function UsuariosPage() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("");
 
-  // Validación de seguridad de la contraseña inicial
+  function marcarTocado(campo: string) {
+    setTocado((prev) => ({ ...prev, [campo]: true }));
+  }
+
+  // Validación de contraseña
   const passValida = !contrasena || (contrasena.length >= 8 && /[a-zA-Z]/.test(contrasena) && /[0-9]/.test(contrasena));
 
   // RN-02: campos obligatorios
@@ -101,6 +94,10 @@ export function UsuariosPage() {
     rol: rol ? "" : "Selecciona un rol.",
   };
   const hayErrores = Object.values(errores).some(Boolean);
+
+  const verError = (campo: keyof typeof errores) => {
+    return intentado || tocado[campo] ? errores[campo] ?? "" : "";
+  };
 
   async function alEnviar(e: FormEvent) {
     e.preventDefault();
@@ -124,6 +121,7 @@ export function UsuariosPage() {
       setRol("");
       setActivo(true);
       setIntentado(false);
+      setTocado({});
       recargar();
     } catch (err) {
       setMensaje({ tipo: "error", texto: obtenerMensajeError(err) });
@@ -132,7 +130,6 @@ export function UsuariosPage() {
     }
   }
 
-  // Filtrado de usuarios por texto y rol
   const usuariosFiltrados = useMemo(() => {
     if (!usuarios) return [];
     return usuarios.filter((u) => {
@@ -150,7 +147,10 @@ export function UsuariosPage() {
   return (
     <section>
       <div className="titulo-fila">
-        <h2>Gestión de usuarios</h2>
+        <h2>
+          <Icono nombre="usuario" tamano={22} style={{ marginRight: "0.5rem", verticalAlign: "middle", color: "var(--primario)" }} />
+          Gestión de usuarios
+        </h2>
       </div>
 
       <AlertMessage tipo="error" mensaje={error} />
@@ -160,72 +160,81 @@ export function UsuariosPage() {
         onCerrar={() => setMensaje(null)}
       />
 
-      {/* Disposición de 2 columnas para el Administrador */}
       <div className="layout-dos-columnas">
         {/* Columna Izquierda: Formulario de registro */}
         <div className="panel-tarjeta">
-          <h3 className="panel-tarjeta-titulo">Registrar usuario</h3>
+          <h3 className="panel-tarjeta-titulo">
+            <Icono nombre="mas" tamano={17} style={{ marginRight: "0.4rem", verticalAlign: "middle" }} />
+            Registrar usuario
+          </h3>
           <form onSubmit={alEnviar} noValidate style={{ display: "grid", gap: "0.85rem" }}>
-            <TextInput
+            <Campo
               etiqueta="Nombre completo"
               valor={nombreCompleto}
-              onCambio={setNombreCompleto}
-              error={intentado ? errores.nombreCompleto : ""}
-              requerido
-              maxLength={150}
+              onCambio={(v) => {
+                setNombreCompleto(v);
+                marcarTocado("nombreCompleto");
+              }}
+              onBlur={() => marcarTocado("nombreCompleto")}
+              error={verError("nombreCompleto")}
               placeholder="Ej. María Sánchez Romero"
-            />
-            <TextInput
-              etiqueta="Correo electrónico"
-              tipo="email"
-              valor={correo}
-              onCambio={setCorreo}
-              error={intentado ? errores.correo : ""}
-              requerido
               maxLength={150}
-              placeholder="Ej. maria.sanchez@ejemplo.edu.pe"
+              requerido
             />
 
-            {/* Campo Contraseña inicial con botón Mostrar / Ocultar */}
-            <div className={`campo${intentado && errores.contrasena ? " campo-con-error" : ""}`}>
-              <label htmlFor="usr-contrasena" style={{ fontWeight: 600, fontSize: "0.9rem" }}>
-                Contraseña inicial <span style={{ color: "var(--error)" }}>*</span>
-              </label>
-              <div className="campo-password">
-                <input
-                  id="usr-contrasena"
-                  type={verPass ? "text" : "password"}
-                  autoComplete="new-password"
-                  value={contrasena}
-                  onChange={(e) => setContrasena(e.target.value)}
-                  disabled={enviando}
-                  placeholder="Mínimo 8 caracteres, letra y número"
-                  aria-describedby={intentado && errores.contrasena ? "err-usr-pass" : undefined}
-                />
+            <Campo
+              etiqueta="Correo institucional"
+              tipo="email"
+              valor={correo}
+              onCambio={(v) => {
+                setCorreo(v);
+                marcarTocado("correo");
+              }}
+              onBlur={() => marcarTocado("correo")}
+              error={verError("correo")}
+              placeholder="Ej. maria.sanchez@ejemplo.edu.pe"
+              maxLength={150}
+              requerido
+            />
+
+            <Campo
+              etiqueta="Contraseña inicial"
+              tipo={verPass ? "text" : "password"}
+              valor={contrasena}
+              onCambio={(v) => {
+                setContrasena(v);
+                marcarTocado("contrasena");
+              }}
+              onBlur={() => marcarTocado("contrasena")}
+              error={verError("contrasena")}
+              placeholder="Mínimo 8 caracteres, letra y número"
+              accionDerecha={
                 <button
                   type="button"
                   className="login-btn-mostrar"
                   aria-pressed={verPass}
                   aria-label={verPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  title={verPass ? "Ocultar contraseña" : "Mostrar contraseña"}
                   onClick={() => setVerPass((v) => !v)}
                 >
-                  {verPass ? "Ocultar" : "Mostrar"}
+                  <Icono nombre={verPass ? "ojo-tachado" : "ojo"} tamano={18} />
                 </button>
-              </div>
-              {intentado && errores.contrasena && (
-                <p id="err-usr-pass" className="campo-error" role="alert">
-                  {errores.contrasena}
-                </p>
-              )}
-            </div>
+              }
+              requerido
+            />
 
-            <SelectInput
+            <Campo
               etiqueta="Rol institucional"
+              tipo="select"
               valor={rol}
-              onCambio={setRol}
+              onCambio={(v) => {
+                setRol(v);
+                marcarTocado("rol");
+              }}
+              onBlur={() => marcarTocado("rol")}
               opciones={OPCIONES_ROL}
               textoVacio="Selecciona un rol"
-              error={intentado ? errores.rol : ""}
+              error={verError("rol")}
               requerido
             />
 
@@ -235,7 +244,6 @@ export function UsuariosPage() {
             </label>
 
             <div style={{ marginTop: "0.5rem" }}>
-              {/* UN SOLO BOTÓN DE ENVÍO */}
               <Button type="submit" disabled={enviando} style={{ width: "100%" }}>
                 {enviando ? "Guardando usuario..." : "Registrar usuario"}
               </Button>
@@ -243,15 +251,17 @@ export function UsuariosPage() {
           </form>
         </div>
 
-        {/* Columna Derecha: Usuarios registrados con buscador y filtro */}
+        {/* Columna Derecha: Usuarios registrados */}
         <div className="panel-tarjeta">
-          <h3 className="panel-tarjeta-titulo">Usuarios registrados</h3>
+          <h3 className="panel-tarjeta-titulo">
+            <Icono nombre="usuario" tamano={17} style={{ marginRight: "0.4rem", verticalAlign: "middle" }} />
+            Usuarios registrados
+          </h3>
 
-          {/* Barra de herramientas: buscador y selector de rol */}
           <div className="barra-herramientas-tabla">
             <div className="input-busqueda-wrapper">
               <span className="input-busqueda-icono" aria-hidden="true">
-                <IconoLupa />
+                <Icono nombre="lupa" />
               </span>
               <input
                 type="text"
@@ -272,7 +282,7 @@ export function UsuariosPage() {
                 <option value="">Todos los roles</option>
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
-                    {r}
+                    {formatearRol(r)}
                   </option>
                 ))}
               </select>

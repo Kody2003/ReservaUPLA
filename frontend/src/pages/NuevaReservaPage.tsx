@@ -1,22 +1,20 @@
 /**
- * NuevaReservaPage — Registro de una reserva (RF-03, RF-04).
+ * NuevaReservaPage — Formulario de registro de una reserva (RF-03, RF-04, BLOQUE 1 y BLOQUE 2).
  *
- * Adaptaciones por rol (FASE 4 + AJUSTE 2):
- *   · Administrador:
- *       - Puede elegir qué usuario será el solicitante de la reserva.
- *   · Solicitante y ResponsableAmbiente:
- *       - Se oculta el selector de usuario; la reserva se registra automáticamente
- *         a nombre del usuario autenticado (usuarioId tomado de AuthContext).
- *       - El backend garantiza además que el token determine el solicitante real.
+ * Características:
+ *  - Campos unificados con Campo.tsx e Icono.tsx (usuario, edificio, calendario, reloj, lápiz).
+ *  - Corrección de usabilidad: los errores NO se muestran al cargar la página.
+ *    Solo se muestran tras tocar un campo (onBlur) o al intentar enviar el formulario (alEnviar).
+ *  - Botón de envío con ícono "+" integrado.
+ *  - Adaptación por rol: solo el Administrador ve el selector de usuario solicitante;
+ *    los demás usuarios registran automáticamente a su propio nombre.
  */
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertMessage } from "../components/ui/AlertMessage";
 import { Button } from "../components/ui/Button";
-import { DateInput } from "../components/ui/DateInput";
-import { SelectInput } from "../components/ui/SelectInput";
-import { TextInput } from "../components/ui/TextInput";
-import { TimeInput } from "../components/ui/TimeInput";
+import { Campo } from "../components/ui/Campo";
+import { Icono } from "../components/ui/Icono";
 import { useAuth } from "../contexts/AuthContext";
 import { useCargarDatos } from "../hooks/useCargarDatos";
 import { useDisponibilidad } from "../hooks/useDisponibilidad";
@@ -25,13 +23,13 @@ import { obtenerMensajeError } from "../services/apiClient";
 import { ambientesService } from "../services/ambientesService";
 import { reservasService } from "../services/reservasService";
 import { usuariosService } from "../services/usuariosService";
+import { formatearRol } from "../types";
 
 export function NuevaReservaPage() {
   const navegar = useNavigate();
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === "Administrador";
 
-  // Solo el administrador necesita la lista de usuarios para el selector
   const cargarUsuarios = useCallback(() => (esAdmin ? usuariosService.listar() : Promise.resolve([])), [esAdmin]);
   const cargarAmbientes = useCallback(() => ambientesService.listar(), []);
   const { datos: usuarios, error: errorUsuarios } = useCargarDatos(cargarUsuarios);
@@ -43,11 +41,17 @@ export function NuevaReservaPage() {
   const [horaInicio, setHoraInicio] = useState("");
   const [horaFin, setHoraFin] = useState("");
   const [motivo, setMotivo] = useState("");
+
+  // Estado de interacción: errores solo tras onBlur o al intentar enviar (BLOQUE 1)
+  const [tocado, setTocado] = useState<Record<string, boolean>>({});
   const [intentado, setIntentado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorEnvio, setErrorEnvio] = useState("");
 
-  // Asegura que para no-administradores el usuarioId siempre sea el del usuario en sesión
+  function marcarTocado(campo: string) {
+    setTocado((prev) => ({ ...prev, [campo]: true }));
+  }
+
   useEffect(() => {
     if (!esAdmin && usuario?.id) {
       setUsuarioId(usuario.id);
@@ -71,7 +75,7 @@ export function NuevaReservaPage() {
 
   const opcionesUsuario = (usuarios ?? [])
     .filter((u) => u.activo)
-    .map((u) => ({ valor: u.id, texto: `${u.nombreCompleto} (${u.rol})` }));
+    .map((u) => ({ valor: u.id, texto: `${u.nombreCompleto} (${formatearRol(u.rol)})` }));
 
   const opcionesAmbiente = (ambientes ?? [])
     .filter((a) => a.estado === "Disponible")
@@ -103,76 +107,136 @@ export function NuevaReservaPage() {
     }
   }
 
-  const ver = (campo: keyof typeof errores, esDeHorario = false) =>
-    intentado || esDeHorario ? errores[campo] ?? "" : "";
+  // Error visible solo si se ha intentado enviar o el usuario ya interactuó con el campo
+  const verError = (campo: keyof typeof errores) => {
+    return intentado || tocado[campo] ? errores[campo] ?? "" : "";
+  };
 
   return (
     <section>
-      <h2>Nueva reserva</h2>
+      <div className="titulo-fila">
+        <h2>
+          <Icono nombre="mas" tamano={22} style={{ marginRight: "0.5rem", verticalAlign: "middle", color: "var(--primario)" }} />
+          Nueva reserva
+        </h2>
+        <Link className="btn btn-secundario" to="/reservas">
+          Volver al listado
+        </Link>
+      </div>
+
       <AlertMessage tipo="error" mensaje={errorUsuarios || errorAmbientes} />
 
-      <form className="formulario" onSubmit={alEnviar} noValidate>
-        {/* Solo el Administrador puede seleccionar qué usuario solicita // AJUSTE 2 */}
+      <form className="formulario" onSubmit={alEnviar} noValidate style={{ maxWidth: 640 }}>
+        {/* Solo el Administrador selecciona el usuario solicitante */}
         {esAdmin && (
-          <SelectInput
+          <Campo
             etiqueta="Usuario solicitante"
+            tipo="select"
             valor={usuarioId}
-            onCambio={setUsuarioId}
+            onCambio={(v) => {
+              setUsuarioId(v);
+              marcarTocado("usuarioId");
+            }}
+            onBlur={() => marcarTocado("usuarioId")}
             opciones={opcionesUsuario}
             textoVacio="Selecciona un usuario"
-            error={ver("usuarioId")}
+            error={verError("usuarioId")}
             requerido
           />
         )}
 
-        <SelectInput
-          etiqueta="Ambiente"
+        {/* Ambiente */}
+        <Campo
+          etiqueta="Ambiente académico"
+          tipo="select"
           valor={ambienteId}
-          onCambio={setAmbienteId}
+          onCambio={(v) => {
+            setAmbienteId(v);
+            marcarTocado("ambienteId");
+          }}
+          onBlur={() => marcarTocado("ambienteId")}
           opciones={opcionesAmbiente}
           textoVacio="Selecciona un ambiente"
-          error={ver("ambienteId")}
+          error={verError("ambienteId")}
           requerido
         />
-        <DateInput etiqueta="Fecha" valor={fecha} onCambio={setFecha} error={ver("fecha")} requerido />
+
+        {/* Fecha */}
+        <Campo
+          etiqueta="Fecha de reserva"
+          tipo="date"
+          valor={fecha}
+          onCambio={(v) => {
+            setFecha(v);
+            marcarTocado("fecha");
+          }}
+          onBlur={() => marcarTocado("fecha")}
+          error={verError("fecha")}
+          requerido
+        />
+
+        {/* Horas de inicio y fin */}
         <div className="fila-horas">
-          <TimeInput
+          <Campo
             etiqueta="Hora de inicio"
+            tipo="time"
             valor={horaInicio}
-            onCambio={setHoraInicio}
-            minimo={HORA_MINIMA}
-            maximo={HORA_MAXIMA}
-            error={ver("horaInicio", true)}
+            onCambio={(v) => {
+              setHoraInicio(v);
+              marcarTocado("horaInicio");
+            }}
+            onBlur={() => marcarTocado("horaInicio")}
+            min={HORA_MINIMA}
+            max={HORA_MAXIMA}
+            error={verError("horaInicio")}
             requerido
           />
-          <TimeInput
+
+          <Campo
             etiqueta="Hora de fin"
+            tipo="time"
             valor={horaFin}
-            onCambio={setHoraFin}
-            minimo={HORA_MINIMA}
-            maximo={HORA_MAXIMA}
-            error={ver("horaFin", true)}
+            onCambio={(v) => {
+              setHoraFin(v);
+              marcarTocado("horaFin");
+            }}
+            onBlur={() => marcarTocado("horaFin")}
+            min={HORA_MINIMA}
+            max={HORA_MAXIMA}
+            error={verError("horaFin")}
             requerido
           />
         </div>
-        <p className="ayuda">Horario institucional permitido: de {HORA_MINIMA} a {HORA_MAXIMA}.</p>
-        <TextInput
-          etiqueta="Motivo"
+        {/* Texto de ayuda RN-04 eliminado (ajuste visual) — la validación se mantiene activa */}
+
+        {/* Motivo */}
+        <Campo
+          etiqueta="Motivo de la reserva"
+          tipo="textarea"
           valor={motivo}
-          onCambio={setMotivo}
-          error={ver("motivo")}
-          requerido
+          onCambio={(v) => {
+            setMotivo(v);
+            marcarTocado("motivo");
+          }}
+          onBlur={() => marcarTocado("motivo")}
+          placeholder="Describe el propósito académico de la reserva..."
           maxLength={300}
+          rows={4}
+          error={verError("motivo")}
+          requerido
         />
 
-        {verificando && <p className="ayuda">Verificando disponibilidad...</p>}
+        {verificando && (
+          <p className="ayuda" style={{ color: "var(--primario)", fontWeight: 600 }}>
+            Verificando disponibilidad de horario...
+          </p>
+        )}
         {disponibilidad && (
           <AlertMessage tipo={disponibilidad.disponible ? "exito" : "error"} mensaje={disponibilidad.mensaje} />
         )}
         <AlertMessage tipo="error" mensaje={errorEnvio} />
 
-        <div className="acciones">
-          <Link className="btn btn-secundario" to="/reservas">Volver al listado</Link>
+        <div className="acciones" style={{ marginTop: "1rem" }}>
           <Button type="submit" disabled={botonDeshabilitado}>
             {enviando ? "Guardando..." : "Registrar reserva"}
           </Button>

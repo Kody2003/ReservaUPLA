@@ -432,21 +432,148 @@ a { color: var(--primario); }
 .campo { display: grid; gap: 0.25rem; }
 .campo label { font-weight: 600; font-size: 0.9rem; color: var(--texto); }
 
-/* Inputs / selects generales */
+/* ========================================================================
+   COMPONENTE UNIVERSAL CAMPO (BLOQUE 1 y AJUSTES VISUALES)
+   ======================================================================== */
+.campo-grupo-universal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.campo-etiqueta-label {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.campo-asterisco-rojo {
+  color: var(--error);
+  font-weight: 700;
+}
+
+/* Caja de control unificada: radio ~12px, borde --borde, fondo --superficie */
+.campo-caja-control {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  min-height: 46px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.campo-caja-control:focus-within {
+  border-color: var(--primario);
+  box-shadow: 0 0 0 3px rgba(26, 103, 163, 0.2);
+}
+
+.campo-caja-control.con-error {
+  border-color: var(--error);
+  background-color: var(--error-fondo);
+}
+
+.campo-caja-control.con-error:focus-within {
+  box-shadow: 0 0 0 3px rgba(179, 38, 30, 0.2);
+}
+
+/* Control nativo interior (input, select, textarea) */
+.campo-control-nativo {
+  flex: 1;
+  width: 100%;
+  border: none !important;
+  background: transparent !important;
+  color: var(--texto) !important;
+  font-family: inherit !important;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.85rem !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 10px;
+}
+
+.campo-control-nativo::placeholder {
+  color: var(--texto-suave);
+  opacity: 0.8;
+}
+
+/* Textarea unificado: ancho completo, misma fuente, tamaño y radio, resize vertical */
+.campo-caja-control.caja-textarea {
+  align-items: stretch;
+  height: auto;
+  min-height: 110px;
+}
+
+.campo-control-nativo.textarea-nativo {
+  font-family: inherit !important;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 110px;
+  padding: 0.75rem 0.85rem !important;
+  width: 100%;
+}
+
+/* Select nativo */
+.campo-control-nativo.select-nativo {
+  cursor: pointer;
+  height: 44px;
+}
+
+/* Ícono a la izquierda opcional */
+.campo-icono-izq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--texto-suave);
+  padding-left: 0.85rem;
+  flex-shrink: 0;
+}
+
+.campo-accion-der {
+  display: inline-flex;
+  align-items: center;
+  padding-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Textos de error y ayuda */
+.campo-error-texto {
+  color: var(--error);
+  font-size: 0.82rem;
+  font-weight: 500;
+  margin: 0.2rem 0 0;
+}
+
+.campo-ayuda-texto {
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  margin: 0.2rem 0 0;
+}
+
+/* Inputs / selects generales de respaldo */
 input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="number"],
 input[type="date"],
 input[type="time"],
-select {
+select,
+textarea {
   font: inherit;
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--borde);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--superficie);
   color: var(--texto);
   width: 100%;
+  font-family: inherit;
 }
 input[type="text"]:focus,
 input[type="email"]:focus,
@@ -454,13 +581,14 @@ input[type="password"]:focus,
 input[type="number"]:focus,
 input[type="date"]:focus,
 input[type="time"]:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--primario);
   box-shadow: 0 0 0 3px rgba(26, 103, 163, 0.2);
 }
 
-.campo-con-error input, .campo-con-error select { border-color: var(--error); background-color: var(--error-fondo); }
+.campo-con-error input, .campo-con-error select, .campo-con-error textarea { border-color: var(--error); background-color: var(--error-fondo); }
 .campo-error { margin: 0; color: var(--error); font-size: 0.875rem; }
 .ayuda { margin: 0; font-size: 0.875rem; color: var(--texto-suave); }
 .casilla { display: flex; gap: 0.5rem; align-items: center; }
@@ -555,24 +683,24 @@ select:focus {
   opacity: 0.8;
 }
 
-/* Botón Mostrar/Ocultar de texto en negrita y color primario */
+/* Botón Mostrar/Ocultar contraseña con ícono de ojo */
 .login-btn-mostrar {
   background: none;
   border: none;
-  color: var(--primario);
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
+  color: var(--texto-suave);
   cursor: pointer;
-  padding: 0.25rem 0.4rem;
-  border-radius: 4px;
+  padding: 0.35rem;
+  border-radius: 6px;
   flex-shrink: 0;
-  margin-left: 0.5rem;
-  transition: opacity 0.15s;
+  margin-left: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
 }
 .login-btn-mostrar:hover {
-  text-decoration: underline;
-  opacity: 0.85;
+  color: var(--primario);
+  background-color: rgba(26, 103, 163, 0.08);
 }
 .login-btn-mostrar:focus-visible {
   outline: 2px solid var(--primario);
@@ -603,6 +731,15 @@ select:focus {
 
 .btn-primario { background: var(--primario); color: #fff; }
 .btn-primario:hover:not(:disabled) { background: var(--primario-hover); }
+
+/* Contraste AA en modo oscuro para botones primarios con texto blanco */
+html[data-tema="oscuro"] .btn-primario {
+  background: #1B6EAF;
+  color: #ffffff;
+}
+html[data-tema="oscuro"] .btn-primario:hover:not(:disabled) {
+  background: #2580CA;
+}
 
 .btn-secundario { background: var(--superficie); color: var(--texto); border-color: var(--borde); }
 .btn-secundario:hover:not(:disabled) { background: var(--fondo); }

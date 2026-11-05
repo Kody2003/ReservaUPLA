@@ -8,6 +8,13 @@ export type RolUsuario = (typeof ROLES)[number];
 export type EstadoAmbiente = (typeof ESTADOS_AMBIENTE)[number];
 export type EstadoReserva = (typeof ESTADOS_RESERVA)[number];
 
+/** Formatea el rol institucional para mostrar en pantalla con texto legible ("Responsable de ambiente"). */
+export function formatearRol(rol?: string | RolUsuario | null): string {
+  if (!rol) return "";
+  if (rol === "ResponsableAmbiente") return "Responsable de ambiente";
+  return rol;
+}
+
 /** Usuario (RF-01). */
 export interface Usuario {
   id: string;

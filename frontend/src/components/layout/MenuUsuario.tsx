@@ -1,27 +1,13 @@
 /**
- * MenuUsuario — Menú desplegable accesible del usuario autenticado (FASE 4).
+ * MenuUsuario — Menú desplegable accesible del usuario autenticado (BLOQUE 2).
  *
- * Características:
- *  - Chip con avatar de iniciales (e.g. "MQ"), nombre completo, rol y flecha indicadora.
- *  - Accesibilidad WAI-ARIA completa:
- *      · aria-haspopup="menu" y aria-expanded en el botón activador.
- *      · role="menu" en el contenedor desplegable.
- *      · role="menuitem" en cada acción interactiva.
- *      · role="separator" en la línea divisoria.
- *  - Interacción por teclado:
- *      · Escape: cierra el menú y devuelve el foco al botón activador.
- *      · Flechas Arriba/Abajo: navega cíclicamente entre las opciones del menú.
- *      · Inicio / Fin: salta al primer o último elemento.
- *      · Clic fuera: cierra el menú automáticamente.
- *  - Opciones:
- *      1. Configuración (/configuracion)
- *      2. Cambiar contraseña (/cambiar-contrasena)
- *      — Separador —
- *      3. Cerrar sesión (destacada en color de peligro // LOGIN)
+ * Utiliza Icono.tsx para los íconos de cada opción (engranaje, candado, salida, flecha).
  */
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { Icono } from "../ui/Icono";
+import { formatearRol } from "../../types";
 
 /** Obtiene hasta 2 iniciales en mayúsculas a partir del nombre completo. */
 function obtenerIniciales(nombre: string): string {
@@ -29,61 +15,6 @@ function obtenerIniciales(nombre: string): string {
   if (partes.length === 0) return "U";
   if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
   return (partes[0][0] + partes[1][0]).toUpperCase();
-}
-
-/** Icono de tuerca / engranaje para Configuración. */
-function IconoConfiguracion() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-    </svg>
-  );
-}
-
-/** Icono de llave para Cambiar Contraseña. */
-function IconoLlave() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="7.5" cy="15.5" r="5.5" />
-      <path d="m21 2-9.6 9.6" />
-      <path d="m15.5 7.5 3 3L22 7l-3-3" />
-    </svg>
-  );
-}
-
-/** Icono de salida para Cerrar Sesión. */
-function IconoCerrarSesion() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
-
-/** Icono de flecha (chevron hacia abajo). */
-function IconoFlecha({ rotada }: { rotada: boolean }) {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{
-        transition: "transform 0.2s ease",
-        transform: rotada ? "rotate(180deg)" : "rotate(0deg)",
-      }}
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
 }
 
 export function MenuUsuario() {
@@ -98,7 +29,6 @@ export function MenuUsuario() {
 
   const iniciales = obtenerIniciales(usuario.nombreCompleto);
 
-  // Cierra el menú al hacer clic fuera
   useEffect(() => {
     if (!abierto) return;
 
@@ -117,7 +47,6 @@ export function MenuUsuario() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [abierto]);
 
-  // Manejo de teclado accesible para el menú desplegable (WAI-ARIA Menu Pattern)
   function handleKeyDownMenu(e: KeyboardEvent<HTMLDivElement>) {
     const items = menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
     if (!items || items.length === 0) return;
@@ -144,7 +73,6 @@ export function MenuUsuario() {
       e.preventDefault();
       listaItems[listaItems.length - 1].focus();
     } else if (e.key === "Tab") {
-      // Tab fuera del menú lo cierra ordenadamente
       setAbierto(false);
     }
   }
@@ -177,9 +105,16 @@ export function MenuUsuario() {
         </span>
         <div className="usuario-datos-columna">
           <span className="usuario-nombre">{usuario.nombreCompleto}</span>
-          <span className="usuario-rol">{usuario.rol}</span>
+          <span className="usuario-rol">{formatearRol(usuario.rol)}</span>
         </div>
-        <IconoFlecha rotada={abierto} />
+        <Icono
+          nombre="flecha"
+          tamano={14}
+          style={{
+            transition: "transform 0.2s ease",
+            transform: abierto ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
       </button>
 
       {/* Menú Flotante */}
@@ -198,7 +133,7 @@ export function MenuUsuario() {
             className="menu-desplegable-item"
             onClick={() => irA("/configuracion")}
           >
-            <IconoConfiguracion />
+            <Icono nombre="engranaje" tamano={16} aria-hidden="true" />
             <span>Configuración</span>
           </button>
 
@@ -208,7 +143,7 @@ export function MenuUsuario() {
             className="menu-desplegable-item"
             onClick={() => irA("/cambiar-contrasena")}
           >
-            <IconoLlave />
+            <Icono nombre="candado" tamano={16} aria-hidden="true" />
             <span>Cambiar contraseña</span>
           </button>
 
@@ -220,7 +155,7 @@ export function MenuUsuario() {
             className="menu-desplegable-item menu-item-peligro"
             onClick={ejecutarCerrarSesion}
           >
-            <IconoCerrarSesion />
+            <Icono nombre="salida" tamano={16} aria-hidden="true" />
             <span>Cerrar sesión</span>
           </button>
         </div>

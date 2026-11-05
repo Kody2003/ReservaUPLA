@@ -1,23 +1,18 @@
 /**
- * ReservaDetallePage — Consulta de detalle y cambio de estado de reserva (RF-06, RF-07).
+ * ReservaDetallePage — Consulta de detalle y cambio de estado de reserva (RF-06, RF-07, BLOQUE 2).
  *
- * Adaptaciones por rol (FASE 4 + AJUSTE 2):
- *   · Administrador (RN-05):
- *       - Visualiza el solicitante original.
- *       - Dispone de botones para Aprobar y Rechazar la reserva (si está Pendiente).
- *       - Puede Cancelar la reserva.
- *   · Solicitante:
- *       - Oculta los botones Aprobar y Rechazar (solo visibles para Administrador // RN-05).
- *       - Oculta datos redundantes de otros usuarios.
- *       - Solo puede cancelar sus propias reservas (verificado por UI y reforzado por backend en Fase 2).
- *   · Regla RN-06:
- *       - Una reserva Rechazada no permite ninguna modificación adicional.
+ * Características:
+ *   · Botones con íconos integrados: Aprobar (check), Rechazar (equis), Cancelar reserva (salida).
+ *   · Administrador (RN-05): puede decidir sobre la reserva si está Pendiente.
+ *   · Solicitante: solo ve sus datos y puede cancelar su propia reserva.
+ *   · RN-06: una reserva Rechazada no permite ninguna acción.
  */
 import { useCallback, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { AlertMessage } from "../components/ui/AlertMessage";
 import { Button } from "../components/ui/Button";
 import { EstadoBadge } from "../components/ui/EstadoBadge";
+import { Icono } from "../components/ui/Icono";
 import { ModalConfirmacion } from "../components/ui/ModalConfirmacion";
 import { useAuth } from "../contexts/AuthContext";
 import { useCargarDatos } from "../hooks/useCargarDatos";
@@ -27,7 +22,6 @@ import type { EstadoReserva, Mensaje } from "../types";
 
 type Accion = Exclude<EstadoReserva, "Pendiente">;
 
-/** Textos del modal según la acción elegida. */
 const TEXTOS: Record<Accion, { titulo: string; mensaje: string; boton: string; peligroso: boolean }> = {
   Aprobada: { titulo: "¿Aprobar esta reserva?", mensaje: "El ambiente quedará reservado en ese horario.", boton: "Aprobar", peligroso: false },
   Rechazada: { titulo: "¿Rechazar esta reserva?", mensaje: "Una reserva rechazada ya no se podrá modificar.", boton: "Rechazar", peligroso: true },
@@ -74,8 +68,16 @@ export function ReservaDetallePage() {
   return (
     <section>
       <div className="titulo-fila">
-        <h2>Detalle de la reserva</h2>
-        <Link to="/reservas">Volver al listado</Link>
+        <h2>
+          <Icono nombre="calendario" tamano={22} style={{ marginRight: "0.5rem", verticalAlign: "middle", color: "var(--primario)" }} />
+          Detalle de la reserva
+        </h2>
+        <Link
+          className="btn btn-primario"
+          to="/reservas"
+        >
+          Volver al listado
+        </Link>
       </div>
 
       <AlertMessage tipo="error" mensaje={error} />
@@ -83,11 +85,10 @@ export function ReservaDetallePage() {
       {cargando && <p>Cargando reserva...</p>}
 
       {reserva && (
-        <>
+        <div className="panel-tarjeta" style={{ maxWidth: 700 }}>
           <dl className="detalle">
             <dt>Estado</dt><dd><EstadoBadge estado={reserva.estado} /></dd>
-            <dt>Ambiente</dt><dd>{reserva.ambienteNombre}</dd>
-            {/* Oculta solicitante en caso de ser Solicitante // AJUSTE 2 */}
+            <dt>Ambiente</dt><dd><strong>{reserva.ambienteNombre}</strong></dd>
             {!esSolicitante && (
               <>
                 <dt>Solicitante</dt><dd>{reserva.usuarioNombre}</dd>
@@ -101,8 +102,8 @@ export function ReservaDetallePage() {
           {/* RN-06: una Rechazada no se puede modificar */}
           {rechazada && <AlertMessage tipo="info" mensaje="Esta reserva fue rechazada y ya no se puede modificar." />}
 
-          <div className="acciones">
-            {/* RN-05: Solo el Administrador ve botones Aprobar y Rechazar // AJUSTE 2 */}
+          <div className="acciones" style={{ marginTop: "1.25rem" }}>
+            {/* RN-05: Solo el Administrador aprueba y rechaza */}
             {esAdmin && (
               <>
                 <Button disabled={!puedeDecidir} onClick={() => setAccion("Aprobada")}>
@@ -114,7 +115,7 @@ export function ReservaDetallePage() {
               </>
             )}
 
-            {/* Cancelación disponible para Solicitante (sus reservas) y Administrador/Responsable */}
+            {/* Cancelación */}
             <Button
               variante="secundario"
               disabled={!puedeCancelar}
@@ -123,7 +124,7 @@ export function ReservaDetallePage() {
               Cancelar reserva
             </Button>
           </div>
-        </>
+        </div>
       )}
 
       {accion && (
