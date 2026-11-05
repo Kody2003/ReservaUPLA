@@ -29,6 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ReservaUPLA.Application\ReservaUPLA.Application.csproj" />
     <ProjectReference Include="..\..\src\ReservaUPLA.Domain\ReservaUPLA.Domain.csproj" />
+    <ProjectReference Include="..\..\src\ReservaUPLA.Infrastructure\ReservaUPLA.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

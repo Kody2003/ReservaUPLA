@@ -1,15 +1,20 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReservaUPLA.API.Seguridad;
 using ReservaUPLA.Application.DTOs;
 using ReservaUPLA.Application.Interfaces;
+using ReservaUPLA.Domain.Common;
+using ReservaUPLA.Domain.Enums;
 
 namespace ReservaUPLA.API.Controllers;
 
 /// <summary>
-/// Endpoints de reservas (RF-03 a RF-07). Controlador delgado: la lógica está en
-/// <see cref="IReservaService"/> y las reglas en la entidad Reserva.
+/// Endpoints de reservas (RF-03 a RF-07). Requiere autenticación JWT.
+/// Controlador delgado: la lógica está en <see cref="IReservaService"/> y las reglas en la entidad Reserva.
+/// // LOGIN // RN-01 // RN-05 // RN-06
 /// </summary>
 [Route("api/reservas")]
+[Authorize]
 public class ReservasController : ApiControllerBase
 {
     private readonly IReservaService _servicio;
@@ -45,10 +50,31 @@ public class ReservasController : ApiControllerBase
         Responder(await _servicio.ObtenerPorIdAsync(id));
 
     /// <summary>
-    /// RF-07: PATCH api/reservas/{id}/estado — cambia el estado.
-    /// RN-05: el rol sale de la cabecera X-Admin-Key; el servicio y la entidad deciden si puede.
+    /// RF-07: PATCH api/reservas/{id}/estado — cambia el estado de una reserva.
+    /// RN-05: Doble defensa; el controlador rechaza con 403 si un no-administrador intenta aprobar o rechazar.
     /// </summary>
     [HttpPatch("{id:guid}/estado")]
-    public async Task<IActionResult> CambiarEstado(Guid id, [FromBody] CambioEstadoDto dto) =>
-        Responder(await _servicio.CambiarEstadoAsync(id, dto.NuevoEstado, _rolActual.ObtenerRolActual()));
+    public async Task<IActionResult> CambiarEstado(Guid id, [FromBody] CambioEstadoDto dto)
+    {
+        var rol = _rolActual.ObtenerRolActual();
+
+        // RN-05: Doble defensa a nivel de controlador
+        var esAprobarORechazar = string.Equals(dto.NuevoEstado, "Aprobada", StringComparison.OrdinalIgnoreCase)
+                              || string.Equals(dto.NuevoEstado, "Rechazada", StringComparison.OrdinalIgnoreCase);
+
+        if (esAprobarORechazar && rol != RolUsuario.Administrador)
+        {
+            var problema = new ProblemDetails
+            {
+                Status = StatusCodes.Status403Forbidden,
+                Title = "Acción no permitida",
+                Detail = "Solo un usuario con rol Administrador puede aprobar o rechazar reservas.",
+                Instance = Request.Path
+            };
+            problema.Extensions["codigo"] = CodigoRegla.RN05;
+            return new ObjectResult(problema) { StatusCode = StatusCodes.Status403Forbidden };
+        }
+
+        return Responder(await _servicio.CambiarEstadoAsync(id, dto.NuevoEstado, rol));
+    }
 }
