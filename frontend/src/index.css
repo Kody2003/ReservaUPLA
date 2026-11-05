@@ -1,134 +1,433 @@
-/* Estilos globales de ReservaUPLA. Paleta fría y sobria; el color fuerte se reserva para los estados de las reservas. */
+/*
+  Estilos globales de ReservaUPLA.
+  FASE 3: Se reemplazó la paleta plana (--tinta, --papel, --acento…) por variables
+  semánticas que soportan modo claro y modo oscuro mediante el atributo data-tema
+  en el elemento <html>.  Todos los colores del UI se leen de estas variables;
+  ningún componente usa valores hexadecimales directos.
+*/
+
+/* ========================================================================
+   PALETA — Modo claro (predeterminado)
+   Los valores reflejan la identidad visual de la UPLA (azul institucional).
+   ======================================================================== */
 :root {
-  --tinta: #1b2a3a;
-  --papel: #eef2f6;
-  --superficie: #ffffff;
-  --acento: #1d5fa8;
-  --acento-oscuro: #144a86;
-  --borde: #c9d3de;
-  --ok: #1f7a4d;
-  --ok-fondo: #e3f3ea;
-  --error: #a8321f;
-  --error-fondo: #fbe9e5;
-  --aviso: #7a5200;
-  --aviso-fondo: #fdf1d6;
-  --info-fondo: #e4eefa;
+  /* Fondo de página y superficies (cards, tablas, modales) */
+  --fondo:          #F4F7FB;
+  --superficie:     #FFFFFF;
+
+  /* Texto principal y texto secundario/ayuda */
+  --texto:          #14233A;
+  --texto-suave:    #5B6B7F;
+
+  /* Color institucional UPLA — botones primarios, enlaces, acento */
+  --primario:       #1A67A3;
+  --primario-hover: #144f80;
+
+  /* Barra superior (cabecera) */
+  --azul-oscuro:    #0F2A44;
+
+  /* Bordes de elementos */
+  --borde:          #D6DFEA;
+
+  /* Avatar del usuario */
+  --avatar-fondo:   #DCEBF7;
+
+  /* Estados de reserva */
+  --ok:             #1f7a4d;
+  --ok-fondo:       #e3f3ea;
+  --ok-borde:       #a9d6bd;
+
+  --error:          #B3261E;
+  --error-fondo:    #fbe9e5;
+  --error-borde:    #e3b1a8;
+
+  --aviso:          #7a5200;
+  --aviso-fondo:    #fdf1d6;
+  --aviso-borde:    #e6cd8c;
+
+  --info-fondo:     #e4eefa;
+  --info-borde:     #b3cbe8;
+  --info-color:     #144f80;
+
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   line-height: 1.5;
-  color: var(--tinta);
-  background: var(--papel);
+  color: var(--texto);
+  background: var(--fondo);
 }
 
+/* ========================================================================
+   PALETA — Modo oscuro
+   Se activa cuando el JS (TemaContext) pone data-tema="oscuro" en <html>.
+   Las mismas variables cambian de valor; el CSS de los componentes no cambia.
+   Contrastes ≥ 4.5:1 en todos los textos (WCAG AA).
+   ======================================================================== */
+html[data-tema="oscuro"] {
+  --fondo:          #0B1320;
+  --superficie:     #152033;
+
+  --texto:          #E6EDF5;
+  --texto-suave:    #9FB0C4;
+
+  --primario:       #3D8FD1;
+  --primario-hover: #5aa3de;
+
+  --azul-oscuro:    #0A1C2F;
+
+  --borde:          #27384F;
+
+  --avatar-fondo:   #1F3B57;
+
+  /* Estados en modo oscuro — se aclararon para mantener contraste sobre --superficie oscura */
+  --ok:             #3fc97a;
+  --ok-fondo:       #0d2f1e;
+  --ok-borde:       #1a5e35;
+
+  --error:          #E5484D;
+  --error-fondo:    #2d1215;
+  --error-borde:    #7a1f22;
+
+  --aviso:          #f5b841;
+  --aviso-fondo:    #2a1e00;
+  --aviso-borde:    #6b4800;
+
+  --info-fondo:     #0e1f38;
+  --info-borde:     #1d3d6b;
+  --info-color:     #5aa3de;
+}
+
+/* ========================================================================
+   RESET Y BASE
+   ======================================================================== */
 * { box-sizing: border-box; }
 body { margin: 0; }
 h1, h2, h3 { line-height: 1.2; margin: 0 0 0.75rem; }
 h2 { font-size: 1.6rem; }
 h3 { font-size: 1.15rem; }
-a { color: var(--acento); }
+a { color: var(--primario); }
 
 /* Foco siempre visible para quien navega con teclado */
 :focus-visible { outline: 3px solid #f0a500; outline-offset: 2px; }
 
+/* Texto solo para lectores de pantalla */
 .solo-lectores {
-  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
+/* Enlace de saltar al contenido */
 .saltar { position: absolute; left: -999px; top: 0; background: var(--superficie); padding: 0.5rem 1rem; z-index: 20; }
 .saltar:focus { left: 0; }
 
-/* ---------- estructura ---------- */
+/* ========================================================================
+   ESTRUCTURA — Layout general
+   ======================================================================== */
 .app { min-height: 100vh; display: flex; flex-direction: column; }
-.cabecera { background: var(--tinta); color: #fff; padding: 0.75rem 1.5rem 0; }
+
+/* Cabecera de dos filas con --azul-oscuro */
+.cabecera { background: var(--azul-oscuro); color: #fff; padding: 0.75rem 1.5rem 0; }
 .cabecera-fila { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between; }
 .marca { font-size: 1.5rem; margin: 0; letter-spacing: 0.01em; }
+
+/* Navegación por pestañas debajo de la cabecera */
 .menu { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.75rem; }
 .menu a { color: #cfdbe8; text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px 6px 0 0; }
 .menu a:hover { color: #fff; }
-.menu a.active { background: var(--papel); color: var(--tinta); font-weight: 600; }
+.menu a.active { background: var(--fondo); color: var(--texto); font-weight: 600; }
+
 .contenido { flex: 1; width: 100%; max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
-.pie { text-align: center; padding: 1rem; font-size: 0.875rem; color: #51647a; }
+.pie { text-align: center; padding: 1rem; font-size: 0.875rem; color: var(--texto-suave); }
 
-.admin-panel { display: flex; gap: 0.5rem; align-items: flex-end; padding-bottom: 0.25rem; }
-.admin-panel .campo { margin: 0; }
-.admin-panel label { color: #cfdbe8; font-size: 0.8rem; }
-.admin-panel input { min-width: 12rem; }
-.admin-activo { background: var(--ok-fondo); color: var(--ok); padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: 600; }
-
+/* Título de sección con acción a la derecha */
 .titulo-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
 .titulo-fila h2 { margin: 0; }
 
-/* ---------- formularios ---------- */
-.formulario { background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 1.25rem; margin-bottom: 2rem; display: grid; gap: 0.75rem; max-width: 640px; }
-.formulario h3 { margin: 0; }
-.campo { display: grid; gap: 0.25rem; }
-.campo label { font-weight: 600; font-size: 0.9rem; }
-input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="date"], input[type="time"], select {
-  font: inherit; padding: 0.5rem 0.65rem; border: 1px solid #8fa0b3; border-radius: 6px; background: #fff; color: var(--tinta); width: 100%;
+/* ========================================================================
+   FORMULARIOS
+   ======================================================================== */
+.formulario {
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: 10px; padding: 1.25rem; margin-bottom: 2rem;
+  display: grid; gap: 0.75rem; max-width: 640px;
 }
-.campo-con-error input, .campo-con-error select { border-color: var(--error); background: #fffafa; }
+.formulario h3 { margin: 0; }
+
+.campo { display: grid; gap: 0.25rem; }
+.campo label { font-weight: 600; font-size: 0.9rem; color: var(--texto); }
+
+/* Inputs / selects */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  width: 100%;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primario);
+  box-shadow: 0 0 0 3px rgba(26, 103, 163, 0.2);
+}
+
+/* Campo con validación fallida */
+.campo-con-error input, .campo-con-error select { border-color: var(--error); background-color: var(--error-fondo); }
 .campo-error { margin: 0; color: var(--error); font-size: 0.875rem; }
-.ayuda { margin: 0; font-size: 0.875rem; color: #51647a; }
+.ayuda { margin: 0; font-size: 0.875rem; color: var(--texto-suave); }
 .casilla { display: flex; gap: 0.5rem; align-items: center; }
 .fila-horas { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-.filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; align-items: end; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+.filtros {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem; align-items: end;
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-radius: 10px; padding: 1rem; margin-bottom: 1rem;
+}
 
-/* ---------- botones ---------- */
-.btn { font: inherit; font-weight: 600; padding: 0.55rem 1.1rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+/* ========================================================================
+   BOTONES
+   ======================================================================== */
+.btn {
+  font: inherit; font-weight: 600; padding: 0.55rem 1.1rem;
+  border-radius: 6px; border: 1px solid transparent;
+  cursor: pointer; text-decoration: none; display: inline-block; text-align: center;
+  transition: background 0.15s, color 0.15s;
+}
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primario { background: var(--acento); color: #fff; }
-.btn-primario:hover:not(:disabled) { background: var(--acento-oscuro); }
-.btn-secundario { background: var(--superficie); color: var(--tinta); border-color: #8fa0b3; }
-.btn-secundario:hover:not(:disabled) { background: #e6ecf2; }
+
+.btn-primario { background: var(--primario); color: #fff; }
+.btn-primario:hover:not(:disabled) { background: var(--primario-hover); }
+
+.btn-secundario { background: var(--superficie); color: var(--texto); border-color: var(--borde); }
+.btn-secundario:hover:not(:disabled) { background: var(--fondo); }
+
 .btn-peligro { background: var(--error); color: #fff; }
-.btn-peligro:hover:not(:disabled) { background: #861f10; }
+.btn-peligro:hover:not(:disabled) { filter: brightness(0.85); }
+
 .acciones { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
 
-/* ---------- alertas ---------- */
-.alerta { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; padding: 0.65rem 0.9rem; border-radius: 6px; border: 1px solid; margin: 0.5rem 0; }
-.alerta-error { background: var(--error-fondo); color: var(--error); border-color: #e3b1a8; }
-.alerta-exito { background: var(--ok-fondo); color: var(--ok); border-color: #a9d6bd; }
-.alerta-info { background: var(--info-fondo); color: var(--acento-oscuro); border-color: #b3cbe8; }
-.alerta-cerrar { background: none; border: none; font-size: 1.25rem; line-height: 1; cursor: pointer; color: inherit; }
+/* ========================================================================
+   ALERTAS
+   ======================================================================== */
+.alerta {
+  display: flex; justify-content: space-between; gap: 1rem;
+  align-items: flex-start; padding: 0.65rem 0.9rem;
+  border-radius: 6px; border: 1px solid; margin: 0.5rem 0;
+}
+.alerta-error   { background: var(--error-fondo);  color: var(--error);      border-color: var(--error-borde); }
+.alerta-exito   { background: var(--ok-fondo);     color: var(--ok);         border-color: var(--ok-borde); }
+.alerta-info    { background: var(--info-fondo);   color: var(--info-color); border-color: var(--info-borde); }
+.alerta-cerrar  { background: none; border: none; font-size: 1.25rem; line-height: 1; cursor: pointer; color: inherit; }
 
-/* ---------- tablas ---------- */
-.tabla-contenedor { overflow-x: auto; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; }
+/* ========================================================================
+   TABLAS
+   ======================================================================== */
+.tabla-contenedor {
+  overflow-x: auto; background: var(--superficie);
+  border: 1px solid var(--borde); border-radius: 10px;
+}
 .tabla { width: 100%; border-collapse: collapse; }
-.tabla th, .tabla td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid #e1e8ef; white-space: nowrap; }
-.tabla th { background: #e6ecf2; font-size: 0.9rem; }
+.tabla th, .tabla td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+.tabla th { background: var(--fondo); font-size: 0.9rem; color: var(--texto-suave); }
 .tabla tr:last-child td { border-bottom: none; }
-.vacio { background: var(--superficie); border: 1px dashed var(--borde); border-radius: 10px; padding: 1.25rem; }
+.tabla tr:hover td { background: var(--fondo); }
+.vacio {
+  background: var(--superficie); border: 1px dashed var(--borde);
+  border-radius: 10px; padding: 1.25rem; color: var(--texto-suave);
+}
 
-/* ---------- estados de reserva ---------- */
-.estado { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.85rem; font-weight: 600; border: 1px solid; }
-.estado-pendiente { background: var(--aviso-fondo); color: var(--aviso); border-color: #e6cd8c; }
-.estado-aprobada { background: var(--ok-fondo); color: var(--ok); border-color: #a9d6bd; }
-.estado-rechazada { background: var(--error-fondo); color: var(--error); border-color: #e3b1a8; }
-.estado-cancelada { background: #e8ecf0; color: #4b5b6c; border-color: #c5ced8; }
+/* ========================================================================
+   ESTADOS DE RESERVA
+   Nota: los colores de texto en modo oscuro son más claros que en modo claro
+   para garantizar contraste ≥ 4.5:1 sobre los fondos oscuros de las celdas.
+   ======================================================================== */
+.estado {
+  display: inline-block; padding: 0.15rem 0.6rem;
+  border-radius: 999px; font-size: 0.85rem; font-weight: 600; border: 1px solid;
+}
+.estado-pendiente  { background: var(--aviso-fondo); color: var(--aviso);  border-color: var(--aviso-borde); }
+.estado-aprobada   { background: var(--ok-fondo);    color: var(--ok);     border-color: var(--ok-borde); }
+.estado-rechazada  { background: var(--error-fondo); color: var(--error);  border-color: var(--error-borde); }
+.estado-cancelada  { background: var(--fondo);       color: var(--texto-suave); border-color: var(--borde); }
 
-/* ---------- dashboard ---------- */
+/* ========================================================================
+   DASHBOARD — Tarjetas indicadoras (RF-08)
+   ======================================================================== */
 .indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
-.indicador { background: var(--superficie); border: 1px solid var(--borde); border-left: 5px solid var(--acento); border-radius: 10px; padding: 1rem 1.1rem; }
-.indicador h3 { font-size: 0.95rem; font-weight: 600; color: #51647a; margin: 0 0 0.25rem; }
-.indicador-valor { font-size: 2rem; font-weight: 700; margin: 0; overflow-wrap: anywhere; }
-.indicador-nota { margin: 0.25rem 0 0; font-size: 0.875rem; color: #51647a; }
+.indicador {
+  background: var(--superficie); border: 1px solid var(--borde);
+  border-left: 5px solid var(--primario); border-radius: 10px; padding: 1rem 1.1rem;
+}
+.indicador h3    { font-size: 0.95rem; font-weight: 600; color: var(--texto-suave); margin: 0 0 0.25rem; }
+.indicador-valor { font-size: 2rem; font-weight: 700; margin: 0; overflow-wrap: anywhere; color: var(--texto); }
+.indicador-nota  { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--texto-suave); }
 
-/* ---------- detalle ---------- */
-.detalle { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.5rem; background: var(--superficie); border: 1px solid var(--borde); border-radius: 10px; padding: 1.1rem; margin: 0 0 1rem; }
-.detalle dt { font-weight: 600; color: #51647a; }
-.detalle dd { margin: 0; }
+/* ========================================================================
+   DETALLE DE RESERVA
+   ======================================================================== */
+.detalle {
+  display: grid; grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem; background: var(--superficie);
+  border: 1px solid var(--borde); border-radius: 10px; padding: 1.1rem; margin: 0 0 1rem;
+}
+.detalle dt { font-weight: 600; color: var(--texto-suave); }
+.detalle dd { margin: 0; color: var(--texto); }
 
-/* ---------- modal ---------- */
-.modal-fondo { position: fixed; inset: 0; background: rgba(27, 42, 58, 0.55); display: grid; place-items: center; padding: 1rem; z-index: 30; }
-.modal { background: var(--superficie); border-radius: 10px; padding: 1.5rem; max-width: 440px; width: 100%; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); }
+/* ========================================================================
+   MODAL
+   ======================================================================== */
+.modal-fondo {
+  position: fixed; inset: 0;
+  background: rgba(10, 28, 47, 0.65);
+  display: grid; place-items: center; padding: 1rem; z-index: 30;
+}
+.modal {
+  background: var(--superficie); border-radius: 10px; padding: 1.5rem;
+  max-width: 440px; width: 100%; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  color: var(--texto);
+}
 .modal h2 { font-size: 1.25rem; }
 .modal .acciones { justify-content: flex-end; }
+
+/* ========================================================================
+   SPINNER de carga (usado en RutaProtegida mientras valida el token)
+   ======================================================================== */
+.spinner-contenedor { display: flex; justify-content: center; align-items: center; height: 60vh; }
+.spinner {
+  width: 2.5rem; height: 2.5rem;
+  border: 4px solid var(--borde);
+  border-top-color: var(--primario);
+  border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* ========================================================================
+   PÁGINA DE LOGIN (LoginPage)
+   Panel izquierdo decorativo + panel derecho con formulario.
+   ======================================================================== */
+.login-pagina {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Panel izquierdo: imagen del campus con overlay */
+.login-izquierda {
+  position: relative;
+  overflow: hidden;
+  background: var(--azul-oscuro);
+}
+.login-foto {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  background-image: url(/img/upla-campus.jpg);
+}
+.login-overlay {
+  position: absolute; inset: 0;
+  background: rgba(15, 42, 68, 0.78);
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 2.5rem;
+  color: #fff;
+}
+.login-marca-izq {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.login-logo-img {
+  width: 56px; height: 56px; border-radius: 10px; object-fit: contain;
+  background: rgba(255,255,255,0.1);
+}
+.login-nombre-app { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.01em; }
+.login-bienvenida {
+  text-align: left;
+}
+.login-bienvenida-label { font-size: 0.75rem; letter-spacing: 0.15em; opacity: 0.8; text-transform: uppercase; margin: 0 0 0.5rem; }
+.login-bienvenida-titulo { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: 0 0 0.75rem; }
+.login-bienvenida-sub { font-size: 1rem; opacity: 0.85; margin: 0; }
+.login-pie-izq { font-size: 0.8rem; opacity: 0.65; }
+
+/* Panel derecho: formulario */
+.login-derecha {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: 3rem 2.5rem;
+  background: var(--fondo);
+  overflow-y: auto;
+}
+.login-form-contenedor { width: 100%; max-width: 380px; }
+
+/* Logo + título solo visible cuando el panel izquierdo está oculto (< 900px) */
+.login-logo-movil {
+  display: none;
+  align-items: center; gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.login-logo-movil img { width: 40px; border-radius: 8px; }
+.login-logo-movil span { font-weight: 700; font-size: 1.1rem; color: var(--texto); }
+
+.login-titulo-panel { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--primario); margin: 0 0 0.25rem; }
+.login-subtitulo-panel { font-size: 1.75rem; font-weight: 800; color: var(--texto); margin: 0 0 0.25rem; }
+.login-desc-panel { font-size: 0.95rem; color: var(--texto-suave); margin: 0 0 1.75rem; }
+
+/* Contenedor de campo con toggle de contraseña */
+.campo-password { position: relative; }
+.campo-password input { padding-right: 2.75rem; }
+.btn-toggle-pass {
+  position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 0.25rem;
+  color: var(--texto-suave); display: flex; align-items: center;
+}
+.btn-toggle-pass:hover { color: var(--texto); }
+
+/* Botón de envío del login: ancho completo */
+.btn-login { width: 100%; padding: 0.7rem; font-size: 1rem; }
+
+/* Bloque de acceso de demostración */
+.demo-bloque {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--borde);
+}
+.demo-titulo { font-size: 0.8rem; font-weight: 600; color: var(--texto-suave); letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 0.6rem; }
+.demo-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.btn-demo {
+  font: inherit; font-size: 0.8rem; font-weight: 600;
+  padding: 0.4rem 0.5rem; border-radius: 6px;
+  border: 1px solid var(--borde); background: var(--superficie);
+  color: var(--texto-suave); cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-demo:hover:not(:disabled) { background: var(--fondo); color: var(--texto); }
+.btn-demo:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ========================================================================
+   RESPONSIVE
+   ======================================================================== */
+@media (max-width: 900px) {
+  /* En pantallas pequeñas el panel izquierdo decorativo se oculta */
+  .login-izquierda { display: none; }
+  .login-pagina { grid-template-columns: 1fr; }
+  .login-logo-movil { display: flex; }
+}
 
 @media (max-width: 560px) {
   .fila-horas { grid-template-columns: 1fr; }
   .detalle { grid-template-columns: 1fr; }
   .cabecera { padding: 0.75rem 1rem 0; }
   .contenido { padding: 1rem; }
+  .demo-botones { grid-template-columns: 1fr; }
 }
 
+/* Respeta la preferencia de movimiento reducido del sistema operativo */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }

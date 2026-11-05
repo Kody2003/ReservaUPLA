@@ -21,6 +21,37 @@ export interface UsuarioCrear {
   correo: string;
   rol: string;
   activo: boolean;
+  contrasena?: string;
+}
+
+/** Sesión de usuario autenticado en el frontend. // LOGIN */
+export interface UsuarioSesion {
+  id: string;
+  nombreCompleto: string;
+  correo: string;
+  rol: RolUsuario;
+}
+
+/** Respuesta de inicio de sesión del backend con JWT. // LOGIN */
+export interface LoginRespuesta {
+  token: string;
+  expiracion: string;
+  id: string;
+  nombreCompleto: string;
+  correo: string;
+  rol: RolUsuario;
+}
+
+/** Credenciales de login. // LOGIN */
+export interface LoginCredenciales {
+  correo: string;
+  contrasena: string;
+}
+
+/** Petición de cambio de contraseña. // LOGIN */
+export interface CambioContrasena {
+  actual: string;
+  nueva: string;
 }
 
 /** Ambiente (RF-02). */

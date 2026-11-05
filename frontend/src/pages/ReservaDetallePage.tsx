@@ -4,8 +4,8 @@ import { AlertMessage } from "../components/ui/AlertMessage";
 import { Button } from "../components/ui/Button";
 import { EstadoBadge } from "../components/ui/EstadoBadge";
 import { ModalConfirmacion } from "../components/ui/ModalConfirmacion";
+import { useAuth } from "../contexts/AuthContext";
 import { useCargarDatos } from "../hooks/useCargarDatos";
-import { useClaveAdmin } from "../hooks/useClaveAdmin";
 import { obtenerMensajeError } from "../services/apiClient";
 import { reservasService } from "../services/reservasService";
 import type { EstadoReserva, Mensaje } from "../types";
@@ -21,8 +21,11 @@ const TEXTOS: Record<Accion, { titulo: string; mensaje: string; boton: string; p
 
 /**
  * RF-06 y RF-07: detalle de una reserva y cambio de estado con ventana de confirmación.
- * Reflejo de reglas en pantalla: RN-05 (aprobar/rechazar requieren modo administrador)
- * y RN-06 (una reserva Rechazada no ofrece acciones). El backend vuelve a validar todo.
+ *
+ * FASE 3 (LOGIN): se reemplazó useClaveAdmin/esAdmin por useAuth().
+ *   - esAdmin: el rol viene del token JWT, ya no de la clave en el panel.
+ *   - RN-05: los botones Aprobar/Rechazar solo se muestran habilitados al Administrador.
+ *   - RN-06: una reserva Rechazada no ofrece acciones (el backend también lo valida).
  */
 export function ReservaDetallePage() {
   const { id = "" } = useParams<{ id: string }>();
@@ -32,8 +35,9 @@ export function ReservaDetallePage() {
   const cargar = useCallback(() => reservasService.obtener(id), [id]);
   const { datos: reserva, cargando, error, recargar } = useCargarDatos(cargar);
 
-  const claveAdmin = useClaveAdmin();
-  const esAdmin = claveAdmin !== "";
+  // LOGIN: el rol ahora viene del token JWT, no de la clave de administrador
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "Administrador"; // RN-05
 
   const [accion, setAccion] = useState<Accion | null>(null);
   const [procesando, setProcesando] = useState(false);
@@ -85,12 +89,13 @@ export function ReservaDetallePage() {
           {/* RN-06: una Rechazada no se puede modificar */}
           {rechazada && <AlertMessage tipo="info" mensaje="Esta reserva fue rechazada y ya no se puede modificar." />}
 
-          {/* RN-05: aprobar o rechazar solo con modo administrador */}
+          {/* RN-05: aprobar o rechazar solo para Administrador (doble defensa: también el backend lo valida) */}
           {puedeDecidir && !esAdmin && (
-            <p className="ayuda">Para aprobar o rechazar, activa el modo administrador con la clave en la parte superior.</p>
+            <p className="ayuda">Solo un Administrador puede aprobar o rechazar una reserva.</p>
           )}
 
           <div className="acciones">
+            {/* RN-05: botones Aprobar/Rechazar solo habilitados para Administrador */}
             <Button disabled={!puedeDecidir || !esAdmin} onClick={() => setAccion("Aprobada")}>Aprobar</Button>
             <Button variante="peligro" disabled={!puedeDecidir || !esAdmin} onClick={() => setAccion("Rechazada")}>Rechazar</Button>
             <Button variante="secundario" disabled={!puedeCancelar} onClick={() => setAccion("Cancelada")}>Cancelar reserva</Button>
