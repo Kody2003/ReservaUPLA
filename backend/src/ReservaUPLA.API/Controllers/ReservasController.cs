@@ -28,14 +28,22 @@ public class ReservasController : ApiControllerBase
 
     /// <summary>RF-03: POST api/reservas — registra una reserva Pendiente.</summary>
     [HttpPost]
-    public async Task<IActionResult> Crear([FromBody] ReservaCrearDto dto) =>
-        ResponderCreado(await _servicio.CrearAsync(dto));
+    public async Task<IActionResult> Crear([FromBody] ReservaCrearDto dto)
+    {
+        var rol = _rolActual.ObtenerRolActual();
+        var usuarioId = _rolActual.ObtenerUsuarioIdActual();
+        return ResponderCreado(await _servicio.CrearAsync(dto, rol, usuarioId));
+    }
 
     /// <summary>RF-05: GET api/reservas?estado=&amp;ambienteId=&amp;fecha= — lista con filtros opcionales.</summary>
     [HttpGet]
     public async Task<IActionResult> Listar(
-        [FromQuery] string? estado, [FromQuery] string? ambienteId, [FromQuery] string? fecha) =>
-        Responder(await _servicio.ListarAsync(estado, ambienteId, fecha));
+        [FromQuery] string? estado, [FromQuery] string? ambienteId, [FromQuery] string? fecha)
+    {
+        var rol = _rolActual.ObtenerRolActual();
+        var usuarioId = _rolActual.ObtenerUsuarioIdActual();
+        return Responder(await _servicio.ListarAsync(estado, ambienteId, fecha, rol, usuarioId));
+    }
 
     /// <summary>RF-04: GET api/reservas/disponibilidad — ¿está libre el ambiente en ese horario?</summary>
     [HttpGet("disponibilidad")]
@@ -46,8 +54,12 @@ public class ReservasController : ApiControllerBase
 
     /// <summary>RF-06: GET api/reservas/{id} — detalle de una reserva.</summary>
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> ObtenerPorId(Guid id) =>
-        Responder(await _servicio.ObtenerPorIdAsync(id));
+    public async Task<IActionResult> ObtenerPorId(Guid id)
+    {
+        var rol = _rolActual.ObtenerRolActual();
+        var usuarioId = _rolActual.ObtenerUsuarioIdActual();
+        return Responder(await _servicio.ObtenerPorIdAsync(id, rol, usuarioId));
+    }
 
     /// <summary>
     /// RF-07: PATCH api/reservas/{id}/estado — cambia el estado de una reserva.
@@ -57,6 +69,7 @@ public class ReservasController : ApiControllerBase
     public async Task<IActionResult> CambiarEstado(Guid id, [FromBody] CambioEstadoDto dto)
     {
         var rol = _rolActual.ObtenerRolActual();
+        var usuarioId = _rolActual.ObtenerUsuarioIdActual();
 
         // RN-05: Doble defensa a nivel de controlador
         var esAprobarORechazar = string.Equals(dto.NuevoEstado, "Aprobada", StringComparison.OrdinalIgnoreCase)
@@ -75,6 +88,6 @@ public class ReservasController : ApiControllerBase
             return new ObjectResult(problema) { StatusCode = StatusCodes.Status403Forbidden };
         }
 
-        return Responder(await _servicio.CambiarEstadoAsync(id, dto.NuevoEstado, rol));
+        return Responder(await _servicio.CambiarEstadoAsync(id, dto.NuevoEstado, rol, usuarioId));
     }
 }
