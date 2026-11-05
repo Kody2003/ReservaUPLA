@@ -655,16 +655,340 @@ select:focus {
 .estado-cancelada  { background: var(--fondo);       color: var(--texto-suave); border-color: var(--borde); }
 
 /* ========================================================================
-   DASHBOARD — Tarjetas indicadoras (RF-08)
+   DASHBOARD — Rediseño de indicadores y bloques analíticos
    ======================================================================== */
-.indicadores { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
-.indicador {
-  background: var(--superficie); border: 1px solid var(--borde);
-  border-left: 5px solid var(--primario); border-radius: 10px; padding: 1rem 1.1rem;
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
 }
-.indicador h3    { font-size: 0.95rem; font-weight: 600; color: var(--texto-suave); margin: 0 0 0.25rem; }
-.indicador-valor { font-size: 2rem; font-weight: 700; margin: 0; overflow-wrap: anywhere; color: var(--texto); }
-.indicador-nota  { margin: 0.25rem 0 0; font-size: 0.875rem; color: var(--texto-suave); }
+
+.dashboard-stat-card {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-left: 6px solid var(--primario);
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dashboard-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card-total       { border-left-color: var(--primario); }
+.stat-card-pendientes  { border-left-color: var(--aviso); }
+.stat-card-aprobadas   { border-left-color: var(--ok); }
+.stat-card-rechazadas  { border-left-color: var(--error); }
+
+.stat-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.stat-card-titulo {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  margin: 0;
+}
+.stat-card-icono {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-icono-total      { background: var(--info-fondo); color: var(--primario); }
+.stat-icono-pendientes { background: var(--aviso-fondo); color: var(--aviso); }
+.stat-icono-aprobadas  { background: var(--ok-fondo); color: var(--ok); }
+.stat-icono-rechazadas { background: var(--error-fondo); color: var(--error); }
+
+.stat-card-valor {
+  font-size: 2.3rem;
+  font-weight: 800;
+  color: var(--texto);
+  margin: 0;
+  line-height: 1.1;
+}
+.stat-card-leyenda {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  margin: 0.5rem 0 0;
+}
+
+/* Fila 2: 3 bloques analíticos */
+.dashboard-secundario-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 2rem;
+}
+
+.tarjeta-dashboard-bloque {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1.4rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.bloque-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--borde);
+  padding-bottom: 0.75rem;
+}
+.bloque-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--texto);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Barra de progreso para ambiente más utilizado */
+.barra-progreso-contenedor {
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+  margin: 0.75rem 0 0.5rem;
+}
+.barra-progreso-llenado {
+  background: var(--primario);
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Gráfico SVG */
+.grafico-svg-contenedor {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Ranking de ambientes */
+.ranking-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ranking-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.ranking-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+}
+.ranking-posicion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--texto-suave);
+  margin-right: 0.5rem;
+}
+.ranking-barra-fondo {
+  background: var(--fondo);
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+}
+.ranking-barra-relleno {
+  background: #5AA9E6;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* ========================================================================
+   DISPOSICIONES Y PANELES (AMBIENTES Y USUARIOS)
+   ======================================================================== */
+.layout-dos-columnas {
+  display: grid;
+  grid-template-columns: minmax(320px, 390px) 1fr;
+  gap: 1.75rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+.layout-una-columna {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.panel-tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 1.4rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+.panel-tarjeta-titulo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--texto);
+  margin: 0 0 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.barra-herramientas-tabla {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.input-busqueda-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+.input-busqueda-wrapper input {
+  padding-left: 2.35rem;
+  border-radius: 8px;
+  height: 40px;
+}
+.input-busqueda-icono {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--texto-suave);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+/* ========================================================================
+   ETIQUETAS VISUALES (BADGES)
+   ======================================================================== */
+.badge-disponible {
+  background: var(--ok-fondo);
+  color: var(--ok);
+  border: 1px solid var(--ok-borde);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-mantenimiento {
+  background: var(--aviso-fondo);
+  color: var(--aviso);
+  border: 1px solid var(--aviso-borde);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-inactivo {
+  background: var(--fondo);
+  color: var(--texto-suave);
+  border: 1px solid var(--borde);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-activo {
+  background: var(--ok-fondo);
+  color: var(--ok);
+  border: 1px solid var(--ok-borde);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.badge-rol-admin {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #ddd6fe;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+html[data-tema="oscuro"] .badge-rol-admin {
+  background: #2e1065;
+  color: #c4b5fd;
+  border-color: #4c1d95;
+}
+
+.badge-rol-resp {
+  background: var(--info-fondo);
+  color: var(--info-color);
+  border: 1px solid var(--info-borde);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.badge-rol-sol {
+  background: var(--fondo);
+  color: var(--texto);
+  border: 1px solid var(--borde);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
 
 /* ========================================================================
    DETALLE DE RESERVA
@@ -798,6 +1122,10 @@ select:focus {
   .login-izquierda { display: none; }
   .login-pagina { grid-template-columns: 1fr; }
   .login-logo-movil { display: flex; }
+
+  /* Dashboard y paneles a una columna */
+  .dashboard-secundario-grid { grid-template-columns: 1fr; }
+  .layout-dos-columnas { grid-template-columns: 1fr; }
 
   /* Barra superior compacta */
   .cabecera-subtitulo-upla { display: none; }
