@@ -31,6 +31,7 @@ public class ReservaUplaDbContext : DbContext
             e.Property(u => u.Correo).HasColumnName("correo").HasMaxLength(150).IsRequired();
             e.Property(u => u.Rol).HasColumnName("rol").HasConversion<string>().HasMaxLength(30).IsRequired();
             e.Property(u => u.Activo).HasColumnName("activo").IsRequired();
+            e.Property(u => u.PasswordHash).HasColumnName("password_hash").IsRequired(false);
 
             // [SUPUESTO] el correo no se repite
             e.HasIndex(u => u.Correo).IsUnique().HasDatabaseName("ux_usuarios_correo");

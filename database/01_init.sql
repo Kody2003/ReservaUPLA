@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     correo           varchar(150)  NOT NULL,
     rol              varchar(30)   NOT NULL,
     activo           boolean       NOT NULL,
+    password_hash    text,
     CONSTRAINT "PK_usuarios" PRIMARY KEY (id),
     CONSTRAINT ck_usuarios_rol CHECK (rol IN ('Solicitante','Administrador','ResponsableAmbiente'))
 );
@@ -78,7 +79,8 @@ INSERT INTO usuarios (id, nombre_completo, correo, rol, activo) VALUES
  ('10000000-0000-0000-0000-000000000001', 'Marta Quispe (Administradora)', 'marta.quispe@ejemplo.edu.pe',  'Administrador',       true),
  ('10000000-0000-0000-0000-000000000002', 'Ana Torres',                    'ana.torres@ejemplo.edu.pe',    'Solicitante',         true),
  ('10000000-0000-0000-0000-000000000003', 'Luis Rojas',                    'luis.rojas@ejemplo.edu.pe',    'Solicitante',         true),
- ('10000000-0000-0000-0000-000000000004', 'Carlos Huamán',                 'carlos.huaman@ejemplo.edu.pe', 'ResponsableAmbiente', true)
+ ('10000000-0000-0000-0000-000000000004', 'Carlos Huamán',                 'carlos.huaman@ejemplo.edu.pe', 'ResponsableAmbiente', true),
+ ('10000000-0000-0000-0000-000000000005', 'Pedro Salas (inactivo)',        'pedro.salas@ejemplo.edu.pe',   'Solicitante',         false)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO ambientes (id, nombre, tipo, capacidad, ubicacion, estado) VALUES
