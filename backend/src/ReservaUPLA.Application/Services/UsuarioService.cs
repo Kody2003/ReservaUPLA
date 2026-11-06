@@ -15,13 +15,15 @@ namespace ReservaUPLA.Application.Services;
 public class UsuarioService : IUsuarioService
 {
     private readonly IUsuarioRepository _usuarios;
+    private readonly IPasswordHasher _hasher;
 
-    public UsuarioService(IUsuarioRepository usuarios)
+    public UsuarioService(IUsuarioRepository usuarios, IPasswordHasher hasher)
     {
         _usuarios = usuarios;
+        _hasher = hasher;
     }
 
-    /// <summary>RF-01: registra un usuario nuevo.</summary>
+    /// <summary>RF-01: registra un usuario nuevo con contraseña hasheada. // LOGIN</summary>
     public async Task<Result<UsuarioDto>> CrearAsync(UsuarioCrearDto dto)
     {
         // RN-02: todos los campos son obligatorios
@@ -32,6 +34,13 @@ public class UsuarioService : IUsuarioService
         if (!Conversiones.TryParseEnum<RolUsuario>(dto.Rol, out var rol))
             return Result<UsuarioDto>.Falla(TipoError.Validacion,
                 "El rol es obligatorio y debe ser Solicitante, Administrador o ResponsableAmbiente.", CodigoRegla.RN02);
+
+        // LOGIN // RN-02: la contraseña es obligatoria y debe cumplir requisitos mínimos
+        if (string.IsNullOrWhiteSpace(dto.Contrasena))
+            return Result<UsuarioDto>.Falla(TipoError.Validacion, "La contraseña es obligatoria.", CodigoRegla.RN02);
+
+        if (dto.Contrasena.Length < 8 || !dto.Contrasena.Any(char.IsLetter) || !dto.Contrasena.Any(char.IsDigit))
+            return Result<UsuarioDto>.Falla(TipoError.Validacion, "La contraseña debe tener al menos 8 caracteres, una letra y un número.");
 
         var nombre = dto.NombreCompleto.Trim();
         var correo = dto.Correo.Trim().ToLowerInvariant();
@@ -49,7 +58,8 @@ public class UsuarioService : IUsuarioService
         if (await _usuarios.ExisteCorreoAsync(correo))
             return Result<UsuarioDto>.Falla(TipoError.Conflicto, "Ya existe un usuario registrado con ese correo.");
 
-        var usuario = Usuario.Crear(nombre, correo, rol, dto.Activo ?? true);
+        var hash = _hasher.Hashear(dto.Contrasena);
+        var usuario = Usuario.Crear(nombre, correo, rol, dto.Activo ?? true, hash);
         await _usuarios.AgregarAsync(usuario);
         return Result<UsuarioDto>.Ok(usuario.ToDto());
     }

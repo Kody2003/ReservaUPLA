@@ -7,7 +7,7 @@ export const reservasService = {
   crear: (datos: ReservaCrear) => apiClient.post<Reserva>("/api/reservas", datos),
 
   /** RF-05: lista reservas; solo envía los filtros que tengan valor. */
-  listar: (filtro: FiltroReservas) => {
+  listar: (filtro: Partial<FiltroReservas> = {}) => {
     const consulta = new URLSearchParams();
     if (filtro.estado) consulta.set("estado", filtro.estado);
     if (filtro.ambienteId) consulta.set("ambienteId", filtro.ambienteId);

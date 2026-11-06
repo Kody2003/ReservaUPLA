@@ -15,11 +15,23 @@ public class Usuario
     public RolUsuario Rol { get; private set; }
     public bool Activo { get; private set; }
 
+    /// <summary>
+    /// Hash seguro de la contraseña (PBKDF2). NUNCA se guarda texto plano.
+    /// Si está vacío o null, el usuario no puede iniciar sesión.
+    /// // LOGIN
+    /// </summary>
+    public string? PasswordHash { get; private set; }
+
     /// <summary>Constructor vacío: solo lo usa EF Core para reconstruir la entidad desde la BD.</summary>
     private Usuario() { }
 
     /// <summary>RF-01: crea un usuario nuevo con un Id (UUID) generado aquí mismo.</summary>
-    public static Usuario Crear(string nombreCompleto, string correo, RolUsuario rol, bool activo = true)
+    public static Usuario Crear(
+        string nombreCompleto,
+        string correo,
+        RolUsuario rol,
+        bool activo = true,
+        string? passwordHash = null)
     {
         return new Usuario
         {
@@ -27,7 +39,17 @@ public class Usuario
             NombreCompleto = nombreCompleto,
             Correo = correo,
             Rol = rol,
-            Activo = activo
+            Activo = activo,
+            PasswordHash = passwordHash
         };
+    }
+
+    /// <summary>
+    /// Actualiza el hash de la contraseña tras validaciones del servicio.
+    /// // LOGIN
+    /// </summary>
+    public void ActualizarPasswordHash(string nuevoHash)
+    {
+        PasswordHash = nuevoHash;
     }
 }

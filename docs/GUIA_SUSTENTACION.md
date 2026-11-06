@@ -1,133 +1,138 @@
-# Guía para sustentar ReservaUPLA (PARTE 7)
+# Guía para la Sustentación del Proyecto ReservaUPLA
+
+Este documento resume los conceptos clave, flujos de ejecución de extremo a extremo, respuestas a preguntas frecuentes del docente y el checklist de capturas para el informe final.
+
+---
 
 ## 1. Recorrido de una petición: «Crear una reserva» (RF-03)
 
-| Paso | Archivo | Método o función | Qué ocurre |
+| Paso | Archivo / Componente | Método o función | Qué ocurre |
 |---|---|---|---|
-| 1. UI | `frontend/src/pages/NuevaReservaPage.tsx` | `alEnviar` | Valida con `useValidacionReserva`, deshabilita el botón según `useDisponibilidad` y llama al servicio |
-| 2. Servicio del frontend | `frontend/src/services/reservasService.ts` | `crear` | Prepara la ruta `/api/reservas` y delega en `apiClient` |
-| 3. apiClient | `frontend/src/services/apiClient.ts` | `solicitar` | Arma la URL, envía JSON y `X-Admin-Key` si existe, convierte errores en `ApiError` |
-| 4. Controller | `backend/src/ReservaUPLA.API/Controllers/ReservasController.cs` | `Crear` | Recibe el DTO y llama al servicio (no tiene lógica) |
-| 5. Service | `backend/src/ReservaUPLA.Application/Services/ReservaService.cs` | `CrearAsync` | Lee y valida datos, crea la entidad, verifica usuario, ambiente y RN-01 |
-| 6. Dominio | `backend/src/ReservaUPLA.Domain/Entities/Reserva.cs` | `Crear` / `ValidarHorario` | Aplica RN-02, RN-03 y RN-04 |
-| 7. Repository | `backend/src/ReservaUPLA.Infrastructure/Repositories/ReservaRepository.cs` | `ExisteSolapamientoAprobadoAsync`, `AgregarAsync` | Consulta el cruce de horarios y guarda |
-| 8. PostgreSQL | tabla `reservas` (`DbContext` / `01_init.sql`) | `INSERT` | Guarda la fila; los CHECK de la BD repiten RN-03 y RN-04 |
+| **1. UI** | `frontend/src/pages/NuevaReservaPage.tsx` | `alEnviar` | Valida con `useValidacionReserva`, verifica horarios y llama a `reservasService.crear`. |
+| **2. Servicio Frontend** | `frontend/src/services/reservasService.ts` | `crear` | Prepara el DTO y delega en el cliente HTTP centralizado `apiClient`. |
+| **3. Cliente HTTP** | `frontend/src/services/apiClient.ts` | `solicitar` | Adjunta la cabecera `Authorization: Bearer <token>` desde `sessionStorage` y realiza la petición `POST /api/reservas`. |
+| **4. Middleware Auth** | Pipeline de ASP.NET Core | `JwtBearerMiddleware` | Valida firma, vigencia y emisor del token; extrae el ID y rol del usuario autenticado en `HttpContext.User`. |
+| **5. Controlador** | `backend/src/ReservaUPLA.API/Controllers/ReservasController.cs` | `Crear` | Controlador delgado. Inyecta el `usuarioId` y `rol` del token al DTO y delega en el servicio de aplicación. |
+| **6. Servicio de Aplicación** | `backend/src/ReservaUPLA.Application/Services/ReservaService.cs` | `CrearAsync` | Valida existencia de usuario activo, ambiente disponible y ausencia de cruces de horario (RN-01). |
+| **7. Dominio** | `backend/src/ReservaUPLA.Domain/Entities/Reserva.cs` | `Crear` y `ValidarHorario` | Aplica RN-02 (campos obligatorios), RN-03 (fin > inicio) y RN-04 (07:00 a 22:00). |
+| **8. Infraestructura** | `backend/src/ReservaUPLA.Infrastructure/Repositories/ReservaRepository.cs` | `AgregarAsync` | Registra la entidad en el `ReservaUplaDbContext`. |
+| **9. PostgreSQL** | Tabla `reservas` | `INSERT` | Persiste el registro; las restricciones CHECK garantizan integridad relacional. |
 
-La respuesta vuelve igual pero al revés: `Result<ReservaDto>` → `ApiControllerBase.ResponderCreado` (201 o ProblemDetails) → `apiClient` → página.
+---
 
-**Cambio de estado (RF-07):** `ReservaDetallePage.confirmar` → `reservasService.cambiarEstado` → `ReservasController.CambiarEstado` (el rol sale de `RolActualProvider`) → `ReservaService.CambiarEstadoAsync` → `Reserva.Aprobar/Rechazar/Cancelar` → `ReservaRepository.ActualizarAsync`.
+## 2. Banco de Preguntas Clave para Sustentación
 
-## 2. Quince preguntas probables
+### Fundamentos de Arquitectura y Diseño
+1. **¿Por qué se eligió Clean Architecture?**  
+   > *Respuesta:* Para desacoplar las reglas de negocio puras (núcleo) de la infraestructura externa (base de datos PostgreSQL, frameworks HTTP). Permite probar el dominio sin simular un servidor web ni depender de una base de datos activa.
 
-1. **¿Por qué Clean Architecture?** Para separar las reglas del negocio de la base de datos y de la API: se pueden probar sin PostgreSQL y cambiar una capa sin romper las otras.
-2. **¿Qué depende de qué?** API → Application + Infrastructure; Infrastructure → Application + Domain; Application → Domain; Domain no depende de nadie.
-3. **¿Por qué las interfaces de repositorio están en Application?** Para que el servicio dependa de un contrato y no de EF Core (inversión de dependencias); Infrastructure lo implementa.
-4. **¿Qué es `Result<T>` y por qué no usar excepciones?** Un objeto que dice si salió bien o mal. Un error de negocio (horario cruzado) es parte normal del flujo; las excepciones se reservan para fallos inesperados.
-5. **¿Dónde se valida cada regla?** En el backend, que es la fuente de verdad (`Reserva`, servicios y repositorio). El frontend solo las refleja para avisar antes. Ver la tabla del README.
-6. **¿Cómo detectas el solapamiento (RN-01)?** Misma fecha, mismo ambiente, estado Aprobada y `inicioNueva < finExistente && finNueva > inicioExistente`. Si uno termina cuando empieza el otro, no se cruzan.
-7. **¿Por qué los controladores son «delgados»?** Solo reciben la petición y delegan; así la lógica se prueba sin HTTP y no se duplica.
-8. **¿Por qué DTOs y no las entidades?** Para no exponer detalles internos, evitar que el cliente cambie campos que no debe y poder evolucionar la API sin tocar el dominio.
-9. **¿Cómo distingues al Administrador (RN-05)?** Con una clave en la cabecera `X-Admin-Key` comparada contra `Admin:ApiKey` (user-secrets). Es la opción más simple; en un sistema real iría JWT y solo cambiaría `RolActualProvider`.
-10. **¿Dónde está el middleware de excepciones y qué hace?** `ExcepcionesMiddleware`: atrapa errores inesperados, los registra en el log y responde un `ProblemDetails` 500 en español sin mostrar detalles técnicos.
-11. **¿Cómo evitas subir secretos?** `dotnet user-secrets` y variables de entorno, `appsettings.Example.json` con valores falsos, `.env.example` y un `.gitignore` que excluye los archivos reales.
-12. **¿Qué diferencia hay entre migraciones y `01_init.sql`?** Ambos crean el mismo esquema; las migraciones se generan desde el código con `dotnet ef`, y el script es SQL directo con datos de prueba. Se pueden combinar porque el script no duplica nada.
-13. **¿Cómo pruebas las reglas?** xUnit para la estructura y Moq para simular repositorios; hay al menos una prueba por RN-01, RN-03, RN-04, RN-05 y RN-06, con el nombre de la regla en el nombre de la prueba.
-14. **¿Cómo cuidas la usabilidad?** Mensajes en español junto al campo, botón deshabilitado cuando el horario es inválido o el ambiente está ocupado, modal con «Cancelar» como opción por defecto, foco atrapado y tecla Escape (prevención de errores, Nielsen).
-15. **¿Qué mejorarías con más tiempo?** Login real con JWT, restricción de exclusión en PostgreSQL para RN-01 ante aprobaciones simultáneas, paginación, y pruebas de integración y del frontend.
+2. **¿Cuál es el sentido de las dependencias entre proyectos?**  
+   > *Respuesta:* Sigue la regla de dependencias concéntricas: API depende de Application e Infrastructure; Infrastructure depende de Application y Domain; Application depende únicamente de Domain; Domain es el centro y no depende de nadie.
 
-## 3. Si te piden agregar un campo (ejemplo: `Piso` en Ambiente)
+3. **¿Por qué las interfaces de repositorio residen en Application y no en Infrastructure?**  
+   > *Respuesta:* Por el principio de Inversión de Dependencias (la "D" de SOLID). La capa de aplicación define el contrato que necesita para operar; la infraestructura es un detalle que implementa dicho contrato mediante EF Core.
 
-Orden recomendado, de adentro hacia afuera:
+4. **¿Qué es el patrón `Result<T>` y por qué se usa en lugar de lanzar excepciones?**  
+   > *Respuesta:* Es un tipo envoltorio funcional que expresa éxito o fallo de forma explícita. Los errores de negocio (ej. solapamiento de horario) son parte previsible del flujo normal y no fallos excepcionales del sistema; reservamos las excepciones para caídas críticas imprevistas.
 
-1. `Domain/Entities/Ambiente.cs`: agregar la propiedad y el parámetro de `Crear`.
-2. `Infrastructure/Persistence/ReservaUplaDbContext.cs`: configurar la columna (`piso`, tamaño, requerido).
-3. Terminal: `dotnet ef migrations add AgregarPisoAmbiente ...` y `dotnet ef database update ...`.
-4. `database/01_init.sql`: agregar la columna y los datos del seed.
-5. `Application/DTOs/AmbienteDtos.cs` y `MapeoExtensions.cs`: agregar el campo al DTO de entrada y al de salida.
-6. `Application/Services/AmbienteService.cs`: validar el campo (RN-02) y pasarlo a `Ambiente.Crear`.
-7. `frontend/src/types/index.ts`: actualizar `Ambiente` y `AmbienteCrear`.
-8. `frontend/src/pages/AmbientesPage.tsx`: campo del formulario, validación y columna de la tabla.
-9. Pruebas: ajustar `Ambiente.Crear(...)` donde se use y agregar un caso nuevo.
-10. `README.md`, `CHANGELOG.md` y un commit: `feat(ambientes): agregar campo piso`.
+5. **¿Por qué los controladores de la API son delgados (thin controllers)?**  
+   > *Respuesta:* Porque su única responsabilidad es mediar entre el protocolo HTTP (códigos de estado, cabeceras) y la aplicación. No contienen lógica de negocio ni consultas a la base de datos, lo que evita duplicidad y facilita pruebas.
 
-Si el campo es solo del frontend (por ejemplo, un filtro), basta con los pasos 7 y 8.
+6. **¿Por qué se utilizan DTOs (Data Transfer Objects) y no se exponen las entidades de dominio directamente en la API?**  
+   > *Respuesta:* Por seguridad y desacoplamiento (evitar vulnerabilidades de over-posting o mass assignment). Impide exponer datos internos como `PasswordHash` o permitir que el cliente modifique estados protegidos por reglas de negocio.
 
-## 4. Checklist de capturas para el informe
+---
 
-**VS Code**
-- [ ] Explorador mostrando las carpetas de las 4 capas, `tests` y `frontend/src`.
-- [ ] `Reserva.cs` con los comentarios `// RN-03`, `// RN-04`, `// RN-05` y `// RN-06` visibles.
-- [ ] `ReservaService.cs` con `CrearAsync` y `// RN-01`.
-- [ ] `ReservaRepository.cs` con la fórmula de solapamiento.
-- [ ] Un componente de `components/ui` (por ejemplo `ModalConfirmacion.tsx`).
+### Seguridad, Autenticación y Control de Acceso
+7. **¿Por qué se utiliza JWT (JSON Web Tokens) para la autenticación?**  
+   > *Respuesta:* Porque permite una autenticación sin estado (stateless) y de alto rendimiento. El servidor no requiere almacenar sesiones en memoria o base de datos por cada petición; cada token viaja firmado digitalmente conteniendo la identidad y rol del usuario.
 
-**Terminal**
-- [ ] `dotnet --version`, `node --version`, `git --version`.
-- [ ] `dotnet build backend/ReservaUPLA.sln` con «Build succeeded».
-- [ ] `dotnet ef migrations add` y `dotnet ef database update`.
-- [ ] `dotnet test` con todas las pruebas en verde.
-- [ ] `git log --oneline` mostrando los commits en Conventional Commits.
-- [ ] `git branch -a` con `main` y `develop`.
-- [ ] `dotnet user-secrets list` con la **contraseña tapada** antes de capturar.
-- [ ] La salida de los `Invoke-RestMethod` de la evidencia (409, 400, 403).
+8. **¿Por qué se implementó PBKDF2 con sal (salt) aleatoria en lugar de un hash simple como SHA-256 o MD5?**  
+   > *Respuesta:* SHA-256 o MD5 son funciones rápidas diseñadas para checksums, vulnerables a ataques de fuerza bruta masiva y tablas arcoíris (rainbow tables). PBKDF2 es una función de derivación de claves intencionalmente costosa que utiliza miles de iteraciones (100,000) y una sal criptográfica única por usuario, haciendo inviables los ataques de diccionario.
 
-**Navegador**
-- [ ] Swagger en `http://localhost:5080/swagger` con los endpoints.
-- [ ] Dashboard con los indicadores.
-- [ ] Formulario de reserva con el error de horario (RN-03/RN-04) junto al campo.
-- [ ] Formulario con el mensaje de «no disponible» (RN-01) y el botón deshabilitado.
-- [ ] Listado con filtros aplicados.
-- [ ] Detalle con el modal de confirmación abierto.
-- [ ] Mensaje de error al aprobar sin modo administrador (RN-05) y detalle de una reserva Rechazada sin acciones (RN-06).
-- [ ] Herramientas del navegador (F12, pestaña Red) mostrando la cabecera `X-Admin-Key` **con el valor tapado**.
+9. **¿Cómo se distingue y autentica al Administrador y a los demás roles en el sistema?**  
+   > *Respuesta:* Mediante Claims incluidos dentro del payload del JWT (`ClaimTypes.Role`). El backend valida el rol con atributos `[Authorize(Roles = "Administrador")]` y en el dominio mediante `Reserva.Aprobar/Rechazar(rolOperador)`.
 
-**Antes de capturar:** revisa que no se vean contraseñas, cadenas de conexión ni la clave de administrador.
+10. **¿Dónde se almacena el token en el navegador y qué implicaciones de seguridad tiene?**  
+    > *Respuesta:* En `sessionStorage`. Esto garantiza que la sesión expire automáticamente al cerrar la pestaña o el navegador, mitigando el riesgo de retención permanente que tiene `localStorage`. El riesgo latente es XSS, mitigado sanitizando entradas, utilizando TypeScript y evitando inyecciones de HTML no confiable.
 
-## 5. Refactorizaciones para S08 (antes / después)
+11. **¿Cuál es la diferencia técnica entre una respuesta HTTP 401 Unauthorized y un HTTP 403 Forbidden?**  
+    > *Respuesta:* **401 Unauthorized** indica que el usuario no está autenticado (falta token, expiró o es inválido) y debe identificarse. **403 Forbidden** indica que el usuario está correctamente autenticado, pero carece de permisos suficientes para la acción solicitada (ej. un Solicitante intentando aprobar una reserva).
 
-**1. Textos «RN-01» escritos a mano → constantes** (`CodigoRegla`)
-```csharp
-// Antes
-return Result<ReservaDto>.Falla(TipoError.Conflicto, "Horario cruzado", "RN-01");
-// Después
-return Result<ReservaDto>.Falla(TipoError.Conflicto, Reserva.MensajeSolapamiento, CodigoRegla.RN01);
-```
+12. **¿Por qué cuando un Solicitante intenta ver el detalle de una reserva ajena se le responde con 404 Not Found y no con 403 Forbidden?**  
+    > *Respuesta:* Por el principio de seguridad por diseño contra la enumeración de recursos (IDOR). Responder 403 revelaría a un atacante que el recurso con dicho identificador efectivamente existe en la base de datos; al devolver 404, el sistema no filtra información sobre la existencia de datos ajenos.
 
-**2. Validación de fecha y horas repetida → método privado** (`ReservaService.LeerFechaYHoras`)
-```csharp
-// Antes: el mismo bloque de TryParse en CrearAsync y en ValidarDisponibilidadAsync
-// Después
-var lectura = LeerFechaYHoras(dto.Fecha, dto.HoraInicio, dto.HoraFin);
-if (!lectura.Exito) return Result<ReservaDto>.Falla(lectura.Tipo, lectura.Error, lectura.Codigo);
-```
+13. **¿Por qué el endpoint de acceso demo (`/api/auth/demo`) no representa una brecha de seguridad?**  
+    > *Respuesta:* Porque está estrictamente restringido al entorno local de desarrollo mediante la comprobación `if (!environment.IsDevelopment()) return NotFound();`. En producción el endpoint no opera. Además, no expone contraseñas en el frontend y reutiliza las comprobaciones de estado activo de usuario.
 
-**3. Fórmula de solapamiento escrita solo dentro de la consulta → método del dominio** (`Reserva.HorariosSeCruzan`)
-```csharp
-// Antes: la condición solo existía dentro de la consulta LINQ y no se podía probar sin base de datos
-// Después: método estático probado por [Theory] y la misma fórmula en la consulta
-public static bool HorariosSeCruzan(TimeOnly inicioNueva, TimeOnly finNueva, TimeOnly inicioExistente, TimeOnly finExistente)
-    => inicioNueva < finExistente && finNueva > inicioExistente;
-```
+14. **¿Cómo está implementado el modo oscuro en el frontend y cómo se evita el parpadeo de pantalla (flicker)?**  
+    > *Respuesta:* Se utilizan tokens de diseño semánticos con variables CSS (`--fondo`, `--superficie`, `--texto`) alternados mediante el atributo `data-theme="dark"` en el elemento raíz `<html>`. Para evitar parpadeo blanco al recargar la página, se ejecuta un script síncrono ultra-rápido en el `<head>` de `index.html` que lee el tema guardado en `sessionStorage` antes de que el DOM y React se rendericen.
 
-**4. useEffect + fetch copiado en cada página → hook** (`useCargarDatos`)
-```tsx
-// Antes (en cada página)
-useEffect(() => { setCargando(true); servicio().then(setDatos).catch(...).finally(...); }, []);
-// Después
-const { datos, cargando, error, recargar } = useCargarDatos(cargar);
-```
+15. **¿Qué medidas técnicas faltarían para elevar la seguridad a un estándar de producción bancaria o institucional?**  
+    > *Respuesta:*
+    > 1. Forzar canal seguro obligatorio mediante HTTPS y HSTS.
+    > 2. Almacenar tokens de actualización (Refresh Tokens) en cookies seguras `HttpOnly`, `Secure` y `SameSite=Strict` con rotación automática.
+    > 3. Implementar limitación de tasa de solicitudes (Rate Limiting) y bloqueo temporal de cuentas ante intentos fallidos reiterados.
+    > 4. Mecanismo de lista negra (Revocation List / Redis) para invalidar tokens JWT antes de su expiración ante cierres forzados.
 
-**5. Etiqueta + error repetidos en cada campo → componente `Campo`**
-```tsx
-// Antes: <label> y <p className="campo-error"> copiados en TextInput, SelectInput, DateInput y TimeInput
-// Después: los cuatro usan <Campo id etiqueta requerido error>...</Campo>
-```
+---
 
-**6. Switch de códigos HTTP dentro de cada controlador → clase base** (`ApiControllerBase`)
-```csharp
-// Antes: cada acción decidía NotFound(), BadRequest(), Conflict()...
-// Después
-public async Task<IActionResult> Crear([FromBody] UsuarioCrearDto dto) => ResponderCreado(await _servicio.CrearAsync(dto));
-```
+## 3. Guía de Modificaciones: Agregar un nuevo campo (ej. `Piso` en Ambiente)
 
-Tip: haz **un commit por refactorización** (`refactor: ...`) y corre `dotnet test` antes y después para demostrar que el comportamiento no cambió.
+Si el docente solicita extender el modelo con un nuevo campo durante la sustentación:
+
+1. **Domain:** Agregar la propiedad en `Ambiente.cs` y actualizar el método de fábrica `Ambiente.Crear(...)`.
+2. **Infrastructure:** Mapear la columna en `ReservaUplaDbContext.cs` (`e.Property(a => a.Piso)...`).
+3. **Migración:** Generar y aplicar con:
+   ```powershell
+   dotnet ef migrations add AgregarPisoAmbiente --project src/ReservaUPLA.Infrastructure --startup-project src/ReservaUPLA.API
+   dotnet ef database update --project src/ReservaUPLA.Infrastructure --startup-project src/ReservaUPLA.API
+   ```
+4. **Base de datos (script):** Actualizar `database/01_init.sql` agregando la columna en el `CREATE TABLE` y en el `INSERT` inicial.
+5. **Application:** Modificar los DTOs `AmbienteCrearDto`, `AmbienteDto` y el método de mapeo en `MapeoExtensions.cs`.
+6. **Application Service:** Validar obligatoriedad o rango del nuevo campo en `AmbienteService.cs`.
+7. **Frontend Types:** Agregar `piso: string` en `Ambiente` y `AmbienteCrear` dentro de `types/index.ts`.
+8. **Frontend UI:** Incluir el componente `<Campo>` correspondiente en `AmbientesPage.tsx` y la columna en la tabla.
+9. **Pruebas:** Ejecutar `dotnet test` y agregar una prueba unitaria del nuevo campo.
+
+---
+
+## 4. Arquitectura de Componentes Reutilizables de Interfaz (Frontend UI)
+
+Para dar cumplimiento riguroso al principio de **responsabilidad única** y **reutilización de componentes** exigido en el caso práctico, la capa de presentación desacopla los controles atómicos de entrada, los contenedores de formulario y los componentes de visualización:
+
+| Componente | Rol y Responsabilidad | Dónde se utiliza |
+|---|---|---|
+| `TextInput` | Control base atómico para `<input>` (`text`, `email`, `password`, `number`), ranura derecha para acciones (`slotDerecha` para mostrar/ocultar contraseña) y vinculación ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `SelectInput` | Control base atómico para listas desplegables (`<select>`), mapeo de opciones, placeholder accesible y soporte ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `DateInput` | Control base atómico para selectores de fecha (`type="date"`), restricciones `min`/`max` y soporte ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `TimeInput` | Control base atómico para selectores de hora (`type="time"`), saltos de paso (`step="900"` para 15 min), restricciones y soporte ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `Campo` | Contenedor de formulario de alto nivel: renderiza etiqueta, asterisco obligatorio, mensajes de error accesibles (`aria-describedby`, `aria-invalid`), texto de ayuda y delega la entrada en los controles base (`TextInput`, `SelectInput`, `DateInput`, `TimeInput`) o textarea. | `LoginPage`, `NuevaReservaPage`, `AmbientesPage`, `UsuariosPage`, `CambiarContrasenaPage`, `ReservasPage` (filtros). |
+| `CardIndicador` | Tarjeta analítica de métricas clave con borde temático de color según variante (`total`, `pendientes`, `aprobadas`, `rechazadas`), ícono SVG, valor destacado y leyenda descriptiva. | `DashboardPage` (4 tarjetas principales de resumen estadístico). |
+| `Button` | Botón accesible con variantes semánticas (`primario`, `secundario`, `peligro`), estados de deshabilitado y carga (`cargando`). | `Layout`, `MenuUsuario`, `ModalConfirmacion`, `AmbientesPage`, `CambiarContrasenaPage`, `NuevaReservaPage`, `ReservaDetallePage`, `ReservasPage`, `UsuariosPage`. |
+| `AlertMessage` | Mensajes de notificación y retroalimentación accesible (`role="alert"`, `aria-live`) para estados de éxito, error o advertencia. | `LoginPage`, `DashboardPage`, `AmbientesPage`, `UsuariosPage`, `NuevaReservaPage`, `ReservasPage`, `ReservaDetallePage`, `CambiarContrasenaPage`. |
+| `ModalConfirmacion` | Ventana modal accesible con control de foco y soporte de teclado para confirmación de acciones críticas (aprobar, rechazar, cancelar). | `ReservaDetallePage`. |
+| `TableList` | Envoltorio reutilizable para tablas de datos tabulares accesibles con cabeceras configurables y estado vacío. | `AmbientesPage`, `ReservasPage`, `UsuariosPage`. |
+| `Icono` | Catálogo centralizado de gráficos vectoriales SVG en línea (`aria-hidden`), adaptables al tema claro y oscuro sin dependencias externas. | `Layout`, `MenuUsuario`, `CardIndicador`, `EstadoBadge`, `DashboardPage`, `ReservasPage`, `AmbientesPage`, `UsuariosPage`. |
+| `EstadoBadge` | Chip visual indicador del estado de la reserva (Pendiente, Aprobada, Rechazada, Cancelada) con color y semántica accesible. | `ReservasPage`, `ReservaDetallePage`, `DashboardPage`. |
+
+---
+
+## 5. Checklist de Capturas para el Informe y Diapositivas
+
+Asegúrate de tomar las siguientes capturas para documentar tu sustentación (recuerda verificar que no queden contraseñas ni claves visibles):
+
+- [ ] **1. Pantalla de Login en modo claro:** Con los campos de entrada, íconos y chips de demostración visibles.
+- [ ] **2. Pantalla de Login en modo oscuro:** Mostrando la coherencia cromática y contraste adecuado.
+- [ ] **3. Login con validación de error:** Mostrando el mensaje de credenciales incorrectas.
+- [ ] **4. Login responsivo en dispositivo móvil (375 px):** Inspección de dispositivo mostrando adaptación vertical.
+- [ ] **5. Acceso de demostración «Usuario inactivo»:** Pulsando el chip de Pedro Salas y visualizando el mensaje de cuenta desactivada.
+- [ ] **6. Barra superior institucional en modo claro y oscuro:** Insignia UPLA, título y alternador de tema.
+- [ ] **7. Menú de usuario desplegado:** Menú accesible abierto con opciones de Configuración, Contraseña y Cerrar sesión.
+- [ ] **8. Dashboard analítico en modo oscuro:** Tarjetas estadísticas con bordes de color, gráfico cronológico y ranking.
+- [ ] **9. Vista del Solicitante («Mis reservas») vs Vista del Administrador:** Comparativa demostrando que el Solicitante no ve Dashboard ni opciones de otros usuarios.
+- [ ] **10. Intento no autorizado 403:** Demostración en consola o Swagger al intentar aprobar con rol Solicitante.
+- [ ] **11. Pantalla de Configuración (`/configuracion`):** Datos del usuario en solo lectura y selector de tema.
+- [ ] **12. Pantalla de Cambio de Contraseña (`/cambiar-contrasena`):** Validación reactiva de reglas de contraseña.
+- [ ] **13. Terminal con `dotnet test`:** Salida limpia mostrando las **41 pruebas unitarias en verde**.
+- [ ] **14. Swagger UI interactivo:** Vista de endpoints con botón de autenticación `Authorize` (Bearer JWT).

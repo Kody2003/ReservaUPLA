@@ -184,4 +184,64 @@ public class ReservaServiceTests
         Assert.Equal(EstadoReserva.Rechazada, reserva.Estado);
         _reservas.Verify(r => r.ActualizarAsync(It.IsAny<Reserva>()), Times.Never);
     }
+
+    // ---------- FASE 2: Cada usuario ve y cancela solo lo suyo ----------
+
+    [Fact]
+    public async Task Listar_Solicitante_SoloVeLasSuyas()
+    {
+        // Arrange
+        var servicio = CrearServicio();
+        var solicitanteId = _usuario.Id;
+        var reservaPropia = Reserva.Crear(new DateOnly(2026, 11, 10), new TimeOnly(9, 0), new TimeOnly(10, 0), "Mi clase", solicitanteId, _ambiente.Id).Valor!;
+        _reservas.Setup(r => r.ListarAsync(null, null, null, solicitanteId))
+            .ReturnsAsync(new List<Reserva> { reservaPropia });
+
+        // Act
+        var resultado = await servicio.ListarAsync(null, null, null, RolUsuario.Solicitante, solicitanteId);
+
+        // Assert
+        Assert.True(resultado.Exito);
+        Assert.Single(resultado.Valor!);
+        Assert.Equal(solicitanteId, resultado.Valor![0].UsuarioId);
+        _reservas.Verify(r => r.ListarAsync(null, null, null, solicitanteId), Times.Once);
+    }
+
+    [Fact]
+    public async Task Cancelar_ReservaAjena_Falla()
+    {
+        // Arrange
+        var servicio = CrearServicio();
+        var idPropietario = Guid.NewGuid();
+        var idSolicitanteIntruso = Guid.NewGuid();
+        var reservaAjena = Reserva.Crear(new DateOnly(2026, 11, 10), new TimeOnly(9, 0), new TimeOnly(10, 0), "Clase ajena", idPropietario, _ambiente.Id).Valor!;
+        _reservas.Setup(r => r.ObtenerPorIdAsync(reservaAjena.Id)).ReturnsAsync(reservaAjena);
+
+        // Act
+        var resultado = await servicio.CambiarEstadoAsync(reservaAjena.Id, "Cancelada", RolUsuario.Solicitante, idSolicitanteIntruso);
+
+        // Assert
+        Assert.False(resultado.Exito);
+        Assert.Equal(TipoError.Prohibido, resultado.Tipo);
+        _reservas.Verify(r => r.ActualizarAsync(It.IsAny<Reserva>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Crear_Solicitante_IgnoraUsuarioIdDelCliente()
+    {
+        // Arrange
+        var servicio = CrearServicio();
+        var idSolicitanteDelToken = _usuario.Id;
+        var idTerceroEnPayload = Guid.NewGuid();
+        var dto = new ReservaCrearDto(idTerceroEnPayload.ToString(), _ambiente.Id.ToString(), "2026-11-10", "09:00", "10:00", "Clase");
+        ConfigurarSolapamiento(false);
+
+        // Act: el cliente manda un id ajeno, pero el token lleva idSolicitanteDelToken
+        var resultado = await servicio.CrearAsync(dto, RolUsuario.Solicitante, idSolicitanteDelToken);
+
+        // Assert: la reserva se creó con el ID del token y no con el del JSON
+        Assert.True(resultado.Exito);
+        Assert.Equal(idSolicitanteDelToken, resultado.Valor!.UsuarioId);
+        _reservas.Verify(r => r.AgregarAsync(It.Is<Reserva>(r => r.UsuarioId == idSolicitanteDelToken)), Times.Once);
+    }
 }
