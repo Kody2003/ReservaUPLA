@@ -27,8 +27,8 @@ public class ReservaRepository : IReservaRepository
             .Include(r => r.Ambiente)
             .FirstOrDefaultAsync(r => r.Id == id);
 
-    /// <summary>RF-05: lista reservas aplicando solo los filtros que vengan con valor.</summary>
-    public async Task<IReadOnlyList<Reserva>> ListarAsync(EstadoReserva? estado, Guid? ambienteId, DateOnly? fecha)
+    /// <summary>RF-05: lista reservas aplicando solo los filtros que vengan con valor. Soporta filtrar por usuario (Fase 2).</summary>
+    public async Task<IReadOnlyList<Reserva>> ListarAsync(EstadoReserva? estado, Guid? ambienteId, DateOnly? fecha, Guid? usuarioId = null)
     {
         IQueryable<Reserva> consulta = _db.Reservas
             .AsNoTracking()
@@ -49,6 +49,11 @@ public class ReservaRepository : IReservaRepository
         {
             var f = fecha.Value;
             consulta = consulta.Where(r => r.Fecha == f);
+        }
+        if (usuarioId.HasValue)
+        {
+            var u = usuarioId.Value;
+            consulta = consulta.Where(r => r.UsuarioId == u);
         }
 
         return await consulta

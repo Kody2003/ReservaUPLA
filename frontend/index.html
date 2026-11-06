@@ -4,6 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ReservaUPLA</title>
+    <!--
+      Script anti-parpadeo (FASE 3 — Modo oscuro):
+      Se ejecuta de forma síncrona ANTES de que React pinte nada.
+      Lee la preferencia guardada en localStorage y aplica el atributo
+      data-tema en <html> de inmediato, evitando el destello blanco
+      que ocurriría si esperáramos a que cargue React.
+    -->
+    <script>
+      (function () {
+        try {
+          var tema = localStorage.getItem('reservaupla.tema');
+          if (tema === 'oscuro') {
+            document.documentElement.setAttribute('data-tema', 'oscuro');
+          } else if (tema === 'claro') {
+            document.documentElement.setAttribute('data-tema', 'claro');
+          } else {
+            // 'sistema' o null: seguir la preferencia del SO
+            var prefiereDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-tema', prefiereDark ? 'oscuro' : 'claro');
+          }
+        } catch (e) {
+          // Si localStorage no está disponible (modo privado estricto) no hacemos nada:
+          // React arrancará en modo claro por defecto.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

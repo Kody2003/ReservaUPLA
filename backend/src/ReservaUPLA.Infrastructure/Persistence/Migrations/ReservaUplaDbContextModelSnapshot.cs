@@ -143,6 +143,10 @@ namespace ReservaUPLA.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("nombre_completo");
 
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
                     b.Property<string>("Rol")
                         .IsRequired()
                         .HasMaxLength(30)

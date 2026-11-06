@@ -9,7 +9,9 @@ namespace ReservaUPLA.Application.Interfaces;
 public interface IUsuarioRepository
 {
     Task<Usuario?> ObtenerPorIdAsync(Guid id);
+    Task<Usuario?> ObtenerPorCorreoAsync(string correo);
     Task<bool> ExisteCorreoAsync(string correo);
     Task<IReadOnlyList<Usuario>> ListarAsync();
     Task AgregarAsync(Usuario usuario);
+    Task ActualizarAsync(Usuario usuario);
 }

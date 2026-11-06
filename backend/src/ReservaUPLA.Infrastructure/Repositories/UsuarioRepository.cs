@@ -22,6 +22,10 @@ public class UsuarioRepository : IUsuarioRepository
     public Task<Usuario?> ObtenerPorIdAsync(Guid id) =>
         _db.Usuarios.FirstOrDefaultAsync(u => u.Id == id);
 
+    /// <summary>Busca un usuario por correo exacto en minúsculas (null si no existe). // LOGIN</summary>
+    public Task<Usuario?> ObtenerPorCorreoAsync(string correo) =>
+        _db.Usuarios.FirstOrDefaultAsync(u => u.Correo == correo.ToLower());
+
     /// <summary>Indica si ya hay un usuario con ese correo (el correo se guarda en minúsculas).</summary>
     public Task<bool> ExisteCorreoAsync(string correo) =>
         _db.Usuarios.AnyAsync(u => u.Correo == correo);
@@ -34,6 +38,13 @@ public class UsuarioRepository : IUsuarioRepository
     public async Task AgregarAsync(Usuario usuario)
     {
         _db.Usuarios.Add(usuario);
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>Actualiza datos del usuario (ej. cambio de hash de contraseña). // LOGIN</summary>
+    public async Task ActualizarAsync(Usuario usuario)
+    {
+        _db.Usuarios.Update(usuario);
         await _db.SaveChangesAsync();
     }
 }

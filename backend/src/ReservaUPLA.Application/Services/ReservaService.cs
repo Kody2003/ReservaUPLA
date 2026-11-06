@@ -25,12 +25,27 @@ public class ReservaService : IReservaService
         _ambientes = ambientes;
     }
 
-    /// <summary>RF-03: registra una reserva en estado Pendiente.</summary>
-    public async Task<Result<ReservaDto>> CrearAsync(ReservaCrearDto dto)
+    /// <summary>
+    /// RF-03: registra una reserva en estado Pendiente.
+    /// Fase 2: si el rol es Solicitante o ResponsableAmbiente, el UsuarioId sale del token y se ignora el del cliente.
+    /// El Administrador puede reservar en nombre de otro usuario.
+    /// // LOGIN // RF-03 // RN-02
+    /// </summary>
+    public async Task<Result<ReservaDto>> CrearAsync(ReservaCrearDto dto, RolUsuario? rolActor = null, Guid? usuarioIdActor = null)
     {
-        // RN-02: ids obligatorios
-        if (!Guid.TryParse(dto.UsuarioId, out var usuarioId) || usuarioId == Guid.Empty)
-            return Result<ReservaDto>.Falla(TipoError.Validacion, "Debes seleccionar el usuario que solicita la reserva.", CodigoRegla.RN02);
+        // Fase 2: si es Solicitante o ResponsableAmbiente, el id del autor sale del token
+        Guid usuarioId;
+        if ((rolActor == RolUsuario.Solicitante || rolActor == RolUsuario.ResponsableAmbiente) && usuarioIdActor.HasValue && usuarioIdActor.Value != Guid.Empty)
+        {
+            usuarioId = usuarioIdActor.Value;
+        }
+        else
+        {
+            // RN-02: id de usuario obligatorio si reserva el Administrador o en llamadas directas
+            if (!Guid.TryParse(dto.UsuarioId, out usuarioId) || usuarioId == Guid.Empty)
+                return Result<ReservaDto>.Falla(TipoError.Validacion, "Debes seleccionar el usuario que solicita la reserva.", CodigoRegla.RN02);
+        }
+
         if (!Guid.TryParse(dto.AmbienteId, out var ambienteId) || ambienteId == Guid.Empty)
             return Result<ReservaDto>.Falla(TipoError.Validacion, "Debes seleccionar el ambiente a reservar.", CodigoRegla.RN02);
 
@@ -108,8 +123,12 @@ public class ReservaService : IReservaService
         return Result<DisponibilidadDto>.Ok(new DisponibilidadDto(true, "El ambiente está disponible en ese horario.", string.Empty));
     }
 
-    /// <summary>RF-05: lista reservas. Los filtros llegan como texto y se convierten aquí.</summary>
-    public async Task<Result<IReadOnlyList<ReservaDto>>> ListarAsync(string? estado, string? ambienteId, string? fecha)
+    /// <summary>
+    /// RF-05: lista reservas. Los filtros llegan como texto y se convierten aquí.
+    /// Fase 2: un Solicitante solo ve sus propias reservas; Administrador y ResponsableAmbiente ven todo.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<ReservaDto>>> ListarAsync(
+        string? estado, string? ambienteId, string? fecha, RolUsuario? rolActor = null, Guid? usuarioIdActor = null)
     {
         EstadoReserva? estadoFiltro = null;
         if (!string.IsNullOrWhiteSpace(estado))
@@ -136,24 +155,42 @@ public class ReservaService : IReservaService
             fechaFiltro = f;
         }
 
-        var lista = await _reservas.ListarAsync(estadoFiltro, ambienteFiltro, fechaFiltro);
+        // Fase 2: Solicitante solo ve sus reservas
+        Guid? usuarioFiltro = null;
+        if (rolActor == RolUsuario.Solicitante && usuarioIdActor.HasValue)
+        {
+            usuarioFiltro = usuarioIdActor.Value;
+        }
+
+        var lista = await _reservas.ListarAsync(estadoFiltro, ambienteFiltro, fechaFiltro, usuarioFiltro);
         return Result<IReadOnlyList<ReservaDto>>.Ok(lista.Select(r => r.ToDto()).ToList());
     }
 
-    /// <summary>RF-06: devuelve el detalle de una reserva.</summary>
-    public async Task<Result<ReservaDto>> ObtenerPorIdAsync(Guid id)
+    /// <summary>
+    /// RF-06: devuelve el detalle de una reserva.
+    /// Fase 2: un Solicitante solo ve sus reservas; un detalle ajeno devuelve 404 (para no revelar su existencia).
+    /// </summary>
+    public async Task<Result<ReservaDto>> ObtenerPorIdAsync(Guid id, RolUsuario? rolActor = null, Guid? usuarioIdActor = null)
     {
         var reserva = await _reservas.ObtenerPorIdAsync(id);
-        return reserva is null
-            ? Result<ReservaDto>.Falla(TipoError.NoEncontrado, "No se encontró la reserva solicitada.")
-            : Result<ReservaDto>.Ok(reserva.ToDto());
+        if (reserva is null)
+            return Result<ReservaDto>.Falla(TipoError.NoEncontrado, "No se encontró la reserva solicitada.");
+
+        // Fase 2: si es Solicitante y la reserva no es suya, responder 404 (no 403) para no revelar que existe
+        if (rolActor == RolUsuario.Solicitante && usuarioIdActor.HasValue && reserva.UsuarioId != usuarioIdActor.Value)
+            return Result<ReservaDto>.Falla(TipoError.NoEncontrado, "No se encontró la reserva solicitada.");
+
+        return Result<ReservaDto>.Ok(reserva.ToDto());
     }
 
     /// <summary>
     /// RF-07: cambia el estado. Las reglas RN-05 y RN-06 las aplican los métodos de la entidad
     /// (Aprobar, Rechazar, Cancelar); aquí solo se prepara lo que necesitan y se guarda el resultado.
+    /// Fase 2: un Solicitante solo cancela las suyas; el Administrador, cualquiera.
+    /// // RN-05 // RN-06
     /// </summary>
-    public async Task<Result<ReservaDto>> CambiarEstadoAsync(Guid id, string? nuevoEstado, RolUsuario rolActor)
+    public async Task<Result<ReservaDto>> CambiarEstadoAsync(
+        Guid id, string? nuevoEstado, RolUsuario rolActor, Guid? usuarioIdActor = null)
     {
         var reserva = await _reservas.ObtenerPorIdAsync(id);
         if (reserva is null)
@@ -175,6 +212,10 @@ public class ReservaService : IReservaService
                 resultado = reserva.Rechazar(rolActor);                   // RN-05, RN-06
                 break;
             case EstadoReserva.Cancelada:
+                // Fase 2: un Solicitante solo cancela las suyas; el Administrador, cualquiera
+                if (rolActor == RolUsuario.Solicitante && usuarioIdActor.HasValue && reserva.UsuarioId != usuarioIdActor.Value)
+                    return Result<ReservaDto>.Falla(TipoError.Prohibido, "Solo puedes cancelar tus propias reservas.");
+
                 resultado = reserva.Cancelar();                           // RN-06
                 break;
             default:

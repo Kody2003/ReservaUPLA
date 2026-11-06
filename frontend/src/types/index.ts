@@ -8,6 +8,13 @@ export type RolUsuario = (typeof ROLES)[number];
 export type EstadoAmbiente = (typeof ESTADOS_AMBIENTE)[number];
 export type EstadoReserva = (typeof ESTADOS_RESERVA)[number];
 
+/** Formatea el rol institucional para mostrar en pantalla con texto legible ("Responsable de ambiente"). */
+export function formatearRol(rol?: string | RolUsuario | null): string {
+  if (!rol) return "";
+  if (rol === "ResponsableAmbiente") return "Responsable de ambiente";
+  return rol;
+}
+
 /** Usuario (RF-01). */
 export interface Usuario {
   id: string;
@@ -21,6 +28,37 @@ export interface UsuarioCrear {
   correo: string;
   rol: string;
   activo: boolean;
+  contrasena?: string;
+}
+
+/** Sesión de usuario autenticado en el frontend. // LOGIN */
+export interface UsuarioSesion {
+  id: string;
+  nombreCompleto: string;
+  correo: string;
+  rol: RolUsuario;
+}
+
+/** Respuesta de inicio de sesión del backend con JWT. // LOGIN */
+export interface LoginRespuesta {
+  token: string;
+  expiracion: string;
+  id: string;
+  nombreCompleto: string;
+  correo: string;
+  rol: RolUsuario;
+}
+
+/** Credenciales de login. // LOGIN */
+export interface LoginCredenciales {
+  correo: string;
+  contrasena: string;
+}
+
+/** Petición de cambio de contraseña. // LOGIN */
+export interface CambioContrasena {
+  actual: string;
+  nueva: string;
 }
 
 /** Ambiente (RF-02). */

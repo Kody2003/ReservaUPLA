@@ -10,8 +10,8 @@ public interface IReservaRepository
     /// <summary>RF-06: busca una reserva con su usuario y ambiente cargados. Null si no existe.</summary>
     Task<Reserva?> ObtenerPorIdAsync(Guid id);
 
-    /// <summary>RF-05: lista reservas; cada filtro es opcional (null = no filtrar).</summary>
-    Task<IReadOnlyList<Reserva>> ListarAsync(EstadoReserva? estado, Guid? ambienteId, DateOnly? fecha);
+    /// <summary>RF-05: lista reservas; cada filtro es opcional (null = no filtrar). Soporta filtrar por usuario (Fase 2).</summary>
+    Task<IReadOnlyList<Reserva>> ListarAsync(EstadoReserva? estado, Guid? ambienteId, DateOnly? fecha, Guid? usuarioId = null);
 
     /// <summary>
     /// RN-01 / RF-04: ¿existe otra reserva Aprobada del mismo ambiente y fecha cuyo horario se cruza?
