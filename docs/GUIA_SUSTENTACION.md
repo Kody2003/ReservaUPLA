@@ -97,7 +97,28 @@ Si el docente solicita extender el modelo con un nuevo campo durante la sustenta
 
 ---
 
-## 4. Checklist de Capturas para el Informe y Diapositivas
+## 4. Arquitectura de Componentes Reutilizables de Interfaz (Frontend UI)
+
+Para dar cumplimiento riguroso al principio de **responsabilidad única** y **reutilización de componentes** exigido en el caso práctico, la capa de presentación desacopla los controles atómicos de entrada, los contenedores de formulario y los componentes de visualización:
+
+| Componente | Rol y Responsabilidad | Dónde se utiliza |
+|---|---|---|
+| `TextInput` | Control base atómico para `<input>` (`text`, `email`, `password`, `number`), ranura derecha para acciones (`slotDerecha` para mostrar/ocultar contraseña) y vinculación ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `SelectInput` | Control base atómico para listas desplegables (`<select>`), mapeo de opciones, placeholder accesible y soporte ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `DateInput` | Control base atómico para selectores de fecha (`type="date"`), restricciones `min`/`max` y soporte ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `TimeInput` | Control base atómico para selectores de hora (`type="time"`), saltos de paso (`step="900"` para 15 min), restricciones y soporte ARIA. | Compuesto internamente por `Campo.tsx`. |
+| `Campo` | Contenedor de formulario de alto nivel: renderiza etiqueta, asterisco obligatorio, mensajes de error accesibles (`aria-describedby`, `aria-invalid`), texto de ayuda y delega la entrada en los controles base (`TextInput`, `SelectInput`, `DateInput`, `TimeInput`) o textarea. | `LoginPage`, `NuevaReservaPage`, `AmbientesPage`, `UsuariosPage`, `CambiarContrasenaPage`, `ReservasPage` (filtros). |
+| `CardIndicador` | Tarjeta analítica de métricas clave con borde temático de color según variante (`total`, `pendientes`, `aprobadas`, `rechazadas`), ícono SVG, valor destacado y leyenda descriptiva. | `DashboardPage` (4 tarjetas principales de resumen estadístico). |
+| `Button` | Botón accesible con variantes semánticas (`primario`, `secundario`, `peligro`), estados de deshabilitado y carga (`cargando`). | `Layout`, `MenuUsuario`, `ModalConfirmacion`, `AmbientesPage`, `CambiarContrasenaPage`, `NuevaReservaPage`, `ReservaDetallePage`, `ReservasPage`, `UsuariosPage`. |
+| `AlertMessage` | Mensajes de notificación y retroalimentación accesible (`role="alert"`, `aria-live`) para estados de éxito, error o advertencia. | `LoginPage`, `DashboardPage`, `AmbientesPage`, `UsuariosPage`, `NuevaReservaPage`, `ReservasPage`, `ReservaDetallePage`, `CambiarContrasenaPage`. |
+| `ModalConfirmacion` | Ventana modal accesible con control de foco y soporte de teclado para confirmación de acciones críticas (aprobar, rechazar, cancelar). | `ReservaDetallePage`. |
+| `TableList` | Envoltorio reutilizable para tablas de datos tabulares accesibles con cabeceras configurables y estado vacío. | `AmbientesPage`, `ReservasPage`, `UsuariosPage`. |
+| `Icono` | Catálogo centralizado de gráficos vectoriales SVG en línea (`aria-hidden`), adaptables al tema claro y oscuro sin dependencias externas. | `Layout`, `MenuUsuario`, `CardIndicador`, `EstadoBadge`, `DashboardPage`, `ReservasPage`, `AmbientesPage`, `UsuariosPage`. |
+| `EstadoBadge` | Chip visual indicador del estado de la reserva (Pendiente, Aprobada, Rechazada, Cancelada) con color y semántica accesible. | `ReservasPage`, `ReservaDetallePage`, `DashboardPage`. |
+
+---
+
+## 5. Checklist de Capturas para el Informe y Diapositivas
 
 Asegúrate de tomar las siguientes capturas para documentar tu sustentación (recuerda verificar que no queden contraseñas ni claves visibles):
 

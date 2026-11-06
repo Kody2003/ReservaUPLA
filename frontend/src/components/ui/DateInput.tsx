@@ -1,27 +1,66 @@
-import { useId } from "react";
-import { Campo } from "./Campo";
-
-interface DateInputProps {
-  etiqueta: string;
-  valor: string;
-  onCambio: (valor: string) => void;
-  error?: string;
-  requerido?: boolean;
+export interface DateInputProps {
+  id?: string;
+  value?: string;
+  valor?: string;
+  onChange?: (valor: string) => void;
+  onCambio?: (valor: string) => void;
+  onBlur?: () => void;
+  min?: string;
+  max?: string;
+  step?: number | string;
+  placeholder?: string;
+  disabled?: boolean;
+  error?: boolean | string;
+  "aria-invalid"?: boolean | "true" | "false";
+  "aria-describedby"?: string;
+  "aria-required"?: boolean | "true" | "false";
+  className?: string;
 }
 
-/** Campo de fecha reutilizable. El valor siempre es "AAAA-MM-DD" (lo que espera la API). */
-export function DateInput({ etiqueta, valor, onCambio, error, requerido }: DateInputProps) {
-  const id = useId();
+/**
+ * DateInput — Control base reutilizable para selección de fechas (type="date").
+ * Renderiza la caja de control redondeada con estilos de foco y error.
+ */
+export function DateInput({
+  id,
+  value,
+  valor,
+  onChange,
+  onCambio,
+  onBlur,
+  min,
+  max,
+  step,
+  placeholder,
+  disabled = false,
+  error,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
+  "aria-required": ariaRequired,
+  className = "",
+}: DateInputProps) {
+  const val = value !== undefined ? value : valor;
+  const cambioHandler = onChange ?? onCambio;
+  const tieneError = Boolean(error);
+
   return (
-    <Campo id={id} etiqueta={etiqueta} requerido={requerido} error={error}>
+    <div className={`campo-caja-control ${tieneError ? "con-error" : ""} ${className}`.trim()}>
       <input
         id={id}
         type="date"
-        value={valor}
-        onChange={(e) => onCambio(e.target.value)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
+        value={val ?? ""}
+        onChange={(e) => cambioHandler?.(e.target.value)}
+        onBlur={onBlur}
+        min={min}
+        max={max}
+        step={step}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-invalid={ariaInvalid !== undefined ? ariaInvalid : tieneError ? true : undefined}
+        aria-describedby={ariaDescribedBy}
+        aria-required={ariaRequired}
+        className="campo-control-nativo"
       />
-    </Campo>
+    </div>
   );
 }

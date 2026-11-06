@@ -17,6 +17,7 @@
  */
 import { useCallback, useMemo } from "react";
 import { AlertMessage } from "../components/ui/AlertMessage";
+import { CardIndicador } from "../components/ui/CardIndicador";
 import { useCargarDatos } from "../hooks/useCargarDatos";
 import { dashboardService } from "../services/dashboardService";
 import { reservasService } from "../services/reservasService";
@@ -167,55 +168,36 @@ export function DashboardPage() {
 
       {dashboard && (
         <>
-          {/* Fila 1: 4 tarjetas con borde de color, ícono SVG y valor grande */}
+          {/* Fila 1: 4 tarjetas con borde de color, ícono SVG y valor grande usando CardIndicador */}
           <div className="dashboard-stats-grid">
-            {/* 1. Total de reservas */}
-            <div className="dashboard-stat-card stat-card-total">
-              <div className="stat-card-top">
-                <span className="stat-card-titulo">Total de reservas</span>
-                <span className="stat-card-icono stat-icono-total" aria-hidden="true">
-                  <IconoCalendario />
-                </span>
-              </div>
-              <p className="stat-card-valor">{dashboard.total}</p>
-              <p className="stat-card-leyenda">Registradas en el sistema</p>
-            </div>
-
-            {/* 2. Pendientes */}
-            <div className="dashboard-stat-card stat-card-pendientes">
-              <div className="stat-card-top">
-                <span className="stat-card-titulo">Pendientes</span>
-                <span className="stat-card-icono stat-icono-pendientes" aria-hidden="true">
-                  <IconoReloj />
-                </span>
-              </div>
-              <p className="stat-card-valor">{dashboard.pendientes}</p>
-              <p className="stat-card-leyenda">Esperan una decisión del administrador</p>
-            </div>
-
-            {/* 3. Aprobadas */}
-            <div className="dashboard-stat-card stat-card-aprobadas">
-              <div className="stat-card-top">
-                <span className="stat-card-titulo">Aprobadas</span>
-                <span className="stat-card-icono stat-icono-aprobadas" aria-hidden="true">
-                  <IconoCheck />
-                </span>
-              </div>
-              <p className="stat-card-valor">{dashboard.aprobadas}</p>
-              <p className="stat-card-leyenda">Horarios confirmados</p>
-            </div>
-
-            {/* 4. Rechazadas */}
-            <div className="dashboard-stat-card stat-card-rechazadas">
-              <div className="stat-card-top">
-                <span className="stat-card-titulo">Rechazadas</span>
-                <span className="stat-card-icono stat-icono-rechazadas" aria-hidden="true">
-                  <IconoCruz />
-                </span>
-              </div>
-              <p className="stat-card-valor">{dashboard.rechazadas}</p>
-              <p className="stat-card-leyenda">Solicitudes denegadas</p>
-            </div>
+            <CardIndicador
+              titulo="Total de reservas"
+              valor={dashboard.total}
+              leyenda="Registradas en el sistema"
+              icono={<IconoCalendario />}
+              variante="total"
+            />
+            <CardIndicador
+              titulo="Pendientes"
+              valor={dashboard.pendientes}
+              leyenda="Esperan una decisión del administrador"
+              icono={<IconoReloj />}
+              variante="pendientes"
+            />
+            <CardIndicador
+              titulo="Aprobadas"
+              valor={dashboard.aprobadas}
+              leyenda="Horarios confirmados"
+              icono={<IconoCheck />}
+              variante="aprobadas"
+            />
+            <CardIndicador
+              titulo="Rechazadas"
+              valor={dashboard.rechazadas}
+              leyenda="Solicitudes denegadas"
+              icono={<IconoCruz />}
+              variante="rechazadas"
+            />
           </div>
 
           {/* Fila 2: 3 bloques analíticos (ambiente más utilizado, gráfico por día y ranking) */}

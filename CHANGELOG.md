@@ -34,6 +34,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/
   - Incorporación de 12 nuevas pruebas unitarias en `ReservaUPLA.Tests` para autenticación, derivación de contraseñas, validación de JWT, y aislamiento de datos por rol (total: 41 pruebas en verde).
 
 ### Cambiado
+- Refactorización: Campo compone los controles base TextInput, SelectInput, DateInput y TimeInput; el Dashboard usa CardIndicador.
 - **Eliminación del esquema preliminar `X-Admin-Key`:**
   - Retirada de la cabecera `X-Admin-Key` y del proveedor provisional de roles en backend.
   - Eliminación de archivos obsoletos del frontend: `AdminKeyPanel.tsx`, `useClaveAdmin.ts` y `claveAdmin.ts`.

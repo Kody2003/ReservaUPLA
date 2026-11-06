@@ -1,40 +1,63 @@
 /**
- * Campo — Componente universal y accesible de campos de formulario (BLOQUE 1).
+ * Campo — Contenedor accesible para campos de formulario.
  *
- * Características:
- *  - Etiqueta superior en negrita con asterisco rojo (--error) para campos requeridos.
- *  - Caja redondeada (~12px), borde --borde, fondo --superficie y altura cómoda (~46px).
- *  - Ícono opcional a la izquierda con estilo unificado.
- *  - Soporta: text, email, password, number, date, time, select y textarea.
- *  - Foco accesible con borde --primario y anillo visible.
- *  - Validación didáctica: cuando hay error, borde rojo (--error) sobre fondo normal
- *    (sin fondos rosados invasivos) y mensaje claro debajo.
- *  - Accesibilidad WAI-ARIA completa: aria-required, aria-invalid y aria-describedby.
- *  - Admite children opcionales para controles altamente personalizados.
+ * Responsabilidad:
+ *  - Renderiza etiqueta superior con indicador de obligatoriedad (asterisco rojo).
+ *  - Compone y renderiza el control base adecuado según el `tipo`:
+ *      · TextInput (para text, email, password, number y sus alias).
+ *      · SelectInput (para select y listas desplegables).
+ *      · DateInput (para date / fecha).
+ *      · TimeInput (para time / hora con step).
+ *      · Textarea unificado (para textarea / area).
+ *  - Enlaza accesibilidad WAI-ARIA (aria-describedby, aria-invalid, aria-required).
+ *  - Muestra mensajes de ayuda contextual y mensajes de error específicos debajo del campo.
  */
 import { useId, type ReactNode } from "react";
+import { TextInput, type TipoTextInput } from "./TextInput";
+import { SelectInput, type OpcionSelect } from "./SelectInput";
+import { DateInput } from "./DateInput";
+import { TimeInput } from "./TimeInput";
 
-export interface OpcionSelect {
-  valor: string;
-  texto: string;
-}
+export type { OpcionSelect, TipoTextInput };
+
+export type TipoCampo =
+  | "text"
+  | "texto"
+  | "email"
+  | "correo"
+  | "password"
+  | "contrasena"
+  | "number"
+  | "numero"
+  | "select"
+  | "date"
+  | "fecha"
+  | "time"
+  | "hora"
+  | "textarea"
+  | "area";
 
 export interface CampoProps {
   id?: string;
   etiqueta: string;
   valor?: string | number;
+  value?: string | number;
   onCambio?: (valor: string) => void;
+  onChange?: (valor: string) => void;
   onBlur?: () => void;
-  tipo?: "text" | "email" | "password" | "number" | "date" | "time" | "select" | "textarea";
+  tipo?: TipoCampo;
+  type?: TipoCampo;
   requerido?: boolean;
   error?: string;
   ayuda?: string;
   icono?: ReactNode;
   accionDerecha?: ReactNode;
+  slotDerecha?: ReactNode;
   placeholder?: string;
   maxLength?: number;
   min?: number | string;
   max?: number | string;
+  step?: number | string;
   disabled?: boolean;
   opciones?: OpcionSelect[];
   textoVacio?: string;
@@ -47,23 +70,27 @@ export function Campo({
   id: idProp,
   etiqueta,
   valor,
+  value,
   onCambio,
+  onChange,
   onBlur,
   tipo = "text",
+  type,
   requerido = false,
   error,
   ayuda,
-  icono,
   accionDerecha,
+  slotDerecha,
   placeholder,
   maxLength,
   min,
   max,
+  step,
   disabled = false,
   opciones,
   textoVacio,
-  rows = 3,
-  className,
+  rows = 4,
+  className = "",
   children,
 }: CampoProps) {
   const autoId = useId();
@@ -76,53 +103,82 @@ export function Campo({
     ayuda && !error ? idAyuda : null,
   ].filter(Boolean).join(" ") || undefined;
 
-  return (
-    <div className={`campo-grupo-universal ${className ?? ""}`}>
-      {/* Etiqueta superior */}
-      <label htmlFor={id} className="campo-etiqueta-label">
-        {etiqueta}
-        {requerido && (
-          <span className="campo-asterisco-rojo" aria-hidden="true">
-            {" "}*
-          </span>
-        )}
-      </label>
+  const val = value !== undefined ? value : valor;
+  const cambioHandler = onChange ?? onCambio;
+  const tipoEfectivo = type ?? tipo;
+  const slot = slotDerecha ?? accionDerecha;
 
-      {/* Caja contenedora con ícono a la izquierda */}
-      <div className={`campo-caja-control ${error ? "con-error" : ""} ${tipo === "textarea" ? "caja-textarea" : ""}`}>
-        {icono && (
-          <span className="campo-icono-izq" aria-hidden="true">
-            {icono}
-          </span>
-        )}
+  function renderizarControl() {
+    if (children) {
+      return children;
+    }
 
-        {/* Si recibe children, los renderiza dentro de la caja */}
-        {children ? (
-          children
-        ) : tipo === "select" ? (
-          <select
-            id={id}
-            value={valor ?? ""}
-            onChange={(e) => onCambio?.(e.target.value)}
-            onBlur={onBlur}
-            disabled={disabled}
-            aria-required={requerido}
-            aria-invalid={Boolean(error)}
-            aria-describedby={ariaDescribedBy}
-            className="campo-control-nativo select-nativo"
-          >
-            {textoVacio && <option value="">{textoVacio}</option>}
-            {opciones?.map((opt) => (
-              <option key={opt.valor} value={opt.valor}>
-                {opt.texto}
-              </option>
-            ))}
-          </select>
-        ) : tipo === "textarea" ? (
+    if (tipoEfectivo === "select") {
+      return (
+        <SelectInput
+          id={id}
+          value={val}
+          onChange={cambioHandler}
+          onBlur={onBlur}
+          opciones={opciones}
+          textoVacio={textoVacio}
+          placeholder={placeholder}
+          disabled={disabled}
+          error={Boolean(error)}
+          aria-invalid={Boolean(error)}
+          aria-describedby={ariaDescribedBy}
+          aria-required={requerido}
+        />
+      );
+    }
+
+    if (tipoEfectivo === "date" || tipoEfectivo === "fecha") {
+      return (
+        <DateInput
+          id={id}
+          value={val !== undefined ? String(val) : ""}
+          onChange={cambioHandler}
+          onBlur={onBlur}
+          min={min !== undefined ? String(min) : undefined}
+          max={max !== undefined ? String(max) : undefined}
+          step={step}
+          placeholder={placeholder}
+          disabled={disabled}
+          error={Boolean(error)}
+          aria-invalid={Boolean(error)}
+          aria-describedby={ariaDescribedBy}
+          aria-required={requerido}
+        />
+      );
+    }
+
+    if (tipoEfectivo === "time" || tipoEfectivo === "hora") {
+      return (
+        <TimeInput
+          id={id}
+          value={val !== undefined ? String(val) : ""}
+          onChange={cambioHandler}
+          onBlur={onBlur}
+          min={min !== undefined ? String(min) : undefined}
+          max={max !== undefined ? String(max) : undefined}
+          step={step}
+          placeholder={placeholder}
+          disabled={disabled}
+          error={Boolean(error)}
+          aria-invalid={Boolean(error)}
+          aria-describedby={ariaDescribedBy}
+          aria-required={requerido}
+        />
+      );
+    }
+
+    if (tipoEfectivo === "textarea" || tipoEfectivo === "area") {
+      return (
+        <div className={`campo-caja-control caja-textarea ${error ? "con-error" : ""}`}>
           <textarea
             id={id}
-            value={valor ?? ""}
-            onChange={(e) => onCambio?.(e.target.value)}
+            value={val ?? ""}
+            onChange={(e) => cambioHandler?.(e.target.value)}
             onBlur={onBlur}
             disabled={disabled}
             rows={rows}
@@ -133,31 +189,55 @@ export function Campo({
             aria-describedby={ariaDescribedBy}
             className="campo-control-nativo textarea-nativo"
           />
-        ) : (
-          <input
-            id={id}
-            type={tipo}
-            value={valor ?? ""}
-            onChange={(e) => onCambio?.(e.target.value)}
-            onBlur={onBlur}
-            disabled={disabled}
-            placeholder={placeholder}
-            maxLength={maxLength}
-            min={min}
-            max={max}
-            aria-required={requerido}
-            aria-invalid={Boolean(error)}
-            aria-describedby={ariaDescribedBy}
-            className="campo-control-nativo"
-          />
-        )}
+        </div>
+      );
+    }
 
-        {accionDerecha && (
-          <span className="campo-accion-der">
-            {accionDerecha}
+    const tipoTexto: TipoTextInput =
+      tipoEfectivo === "correo" || tipoEfectivo === "email"
+        ? "email"
+        : tipoEfectivo === "contrasena" || tipoEfectivo === "password"
+        ? "password"
+        : tipoEfectivo === "numero" || tipoEfectivo === "number"
+        ? "number"
+        : "text";
+
+    return (
+      <TextInput
+        id={id}
+        type={tipoTexto}
+        value={val}
+        onChange={cambioHandler}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        disabled={disabled}
+        maxLength={maxLength}
+        min={min}
+        max={max}
+        step={step}
+        slotDerecha={slot}
+        error={Boolean(error)}
+        aria-invalid={Boolean(error)}
+        aria-describedby={ariaDescribedBy}
+        aria-required={requerido}
+      />
+    );
+  }
+
+  return (
+    <div className={`campo-grupo-universal ${className}`.trim()}>
+      {/* Etiqueta superior */}
+      <label htmlFor={id} className="campo-etiqueta-label">
+        {etiqueta}
+        {requerido && (
+          <span className="campo-asterisco-rojo" aria-hidden="true">
+            {" "}*
           </span>
         )}
-      </div>
+      </label>
+
+      {/* Control base renderizado según el tipo */}
+      {renderizarControl()}
 
       {/* Mensaje de ayuda (cuando no hay error) */}
       {ayuda && !error && (
