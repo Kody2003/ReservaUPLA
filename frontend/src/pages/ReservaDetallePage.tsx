@@ -73,7 +73,7 @@ export function ReservaDetallePage() {
           Detalle de la reserva
         </h2>
         <Link
-          className="btn btn-primario"
+          className="btn btn-secundario"
           to="/reservas"
         >
           Volver al listado
