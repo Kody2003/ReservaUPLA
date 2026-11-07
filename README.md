@@ -203,4 +203,7 @@ dotnet test backend/ReservaUPLA.sln --filter "FullyQualifiedName~RN"
 
 ## Imágenes
 
-Fuente de las imágenes: <completar por el estudiante>
+Fuente de las imágenes (uso exclusivamente académico y sin fines comerciales; los derechos pertenecen a sus respectivos titulares). Ambas se obtuvieron de resultados de Google Imágenes, como miniaturas alojadas en `gstatic.com`:
+
+- `frontend/public/img/upla-campus.jpg`: https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTe3U_w7dYpNZieWTe9fOBHLtW7yTf--xxUooggyl18iA&s=10
+- `frontend/public/img/upla-logo.png`: https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjzoqjEwoosftf9vVPYno-KlDLmKWFu55eZYXXPHNlfpEpHu4SDyINFrmV&s=10

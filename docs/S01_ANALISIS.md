@@ -44,7 +44,7 @@ La universidad necesita gestionar y ordenar el uso compartido de sus ambientes f
 | **CU-04** | Validar disponibilidad | Solicitante | RF-04, RN-01 | Comprueba en tiempo real si un horario está libre de cruces con reservas aprobadas. |
 | **CU-05** | Listar reservas | Todos | RF-05 | Administrador y Responsable ven todas; Solicitante ve solo sus propias reservas. |
 | **CU-06** | Ver detalle de reserva | Todos | RF-06 | Muestra datos completos. Si un Solicitante consulta una ajena, recibe 404. |
-| **CU-07** | Cambiar estado de reserva | Administrador / Usuario | RF-07, RN-01, RN-05, RN-06 | Administrador aprueba o rechaza. El titular de la reserva puede cancelarla. |
+| **CU-07** | Cambiar estado de reserva | Administrador / Usuario | RF-07, RN-01, RN-05, RN-06 | Administrador aprueba o rechaza. El Solicitante cancela solo las suyas; Responsable y Administrador, cualquiera. |
 | **CU-08** | Ver dashboard | Administrador | RF-08 | Visualiza totales, ranking de ambientes más utilizados y reservas por fecha. |
 | **CU-09** | Iniciar sesión | Todos | LOGIN, RN-02 | Autenticación con correo y contraseña para obtener un token JWT con claims. |
 | **CU-10** | Cambiar contraseña | Todos autenticados | LOGIN, RN-02 | Permite al usuario actualizar su contraseña validando la actual y complejidad. |
@@ -112,7 +112,7 @@ flowchart LR
 | **CU-04 Validar disponibilidad** | RN-01, RN-03, RN-04 | `Reserva`, `Ambiente` | Algoritmo de traslape en repositorio contra reservas en estado Aprobada. |
 | **CU-05 Listar reservas** | Aislamiento por rol | `Reserva` | Filtro LINQ: Solicitante consulta `r.UsuarioId == usuarioActualId`. |
 | **CU-06 Ver detalle** | Aislamiento por rol | `Reserva`, `Usuario`, `Ambiente` | Respuesta 404 NotFound si el recurso no pertenece al Solicitante autenticado. |
-| **CU-07 Cambiar estado** | RN-01, RN-05, RN-06 | `Reserva` | Solo Administrador aprueba/rechaza (RN-05). Una reserva Rechazada es inmutable (RN-06). Cancelar respeta titularidad. |
+| **CU-07 Cambiar estado** | RN-01, RN-05, RN-06 | `Reserva` | Solo Administrador aprueba/rechaza (RN-05). Una reserva Rechazada es inmutable (RN-06). Cancelar: el Solicitante solo las suyas; Responsable y Administrador, cualquiera. |
 | **CU-08 Dashboard** | Integración de métricas | `Reserva`, `Ambiente` | Agregación de conteos por estado, reservas aprobadas por ambiente y distribución cronológica. |
 
 ---
