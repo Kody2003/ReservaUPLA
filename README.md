@@ -135,7 +135,7 @@ En modo desarrollo (`Development`), el sistema inicializa sus contraseñas con e
 | **Ver detalle de reserva (RF-06)** | ✅ Cualquier reserva | ✅ Cualquier reserva | ❌ Solo reservas propias (404 ajenas) |
 | **Crear nueva reserva (RF-03)** | ✅ Para cualquier usuario | ✅ Para sí mismo | ✅ Para sí mismo |
 | **Aprobar / Rechazar reservas (RN-05)** | ✅ Exclusivo | ❌ | ❌ |
-| **Cancelar reserva (RF-07)** | ✅ Cualquier reserva | ✅ Solo propias | ✅ Solo reservas propias |
+| **Cancelar reserva (RF-07)** | ✅ Cualquier reserva | ✅ Cualquier reserva | ✅ Solo reservas propias |
 | **Listar ambientes (RF-02)** | ✅ | ✅ | ✅ (en formulario de reserva) |
 | **Registrar nuevos ambientes (RF-02)**| ✅ Exclusivo | ❌ | ❌ |
 | **Listar usuarios (RF-01)** | ✅ Exclusivo | ❌ | ❌ |
@@ -161,7 +161,7 @@ En modo desarrollo (`Development`), el sistema inicializa sus contraseñas con e
 | `GET` | `/api/reservas/disponibilidad` | Autenticado | RF-04. Verifica cruces de horario para fecha y ambiente. |
 | `GET` | `/api/reservas` | Autenticado | RF-05. Administrador y Responsable ven todas; Solicitante solo las suyas. |
 | `GET` | `/api/reservas/{id}` | Autenticado | RF-06. Detalle de reserva. Si es ajena a un Solicitante devuelve 404. |
-| `PATCH` | `/api/reservas/{id}/estado` | Autenticado | RF-07 / RN-05, RN-06. Aprobar/Rechazar solo Administrador. Cancelar según titularidad. |
+| `PATCH` | `/api/reservas/{id}/estado` | Autenticado | RF-07 / RN-05, RN-06. Aprobar/Rechazar solo Administrador. Cancelar: el Solicitante solo las suyas; Responsable y Administrador, cualquiera. |
 
 ### Ambientes y Usuarios
 | Método | Ruta | Autorización | Descripción |
