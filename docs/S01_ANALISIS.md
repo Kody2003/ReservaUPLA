@@ -29,7 +29,7 @@ La universidad necesita gestionar y ordenar el uso compartido de sus ambientes f
 | Actor | Descripción y responsabilidades |
 |---|---|
 | **Solicitante** | Docente, estudiante o personal administrativo que requiere un ambiente. Inicia sesión, solicita reservas a su nombre, consulta únicamente sus propias reservas y puede cancelar sus reservas pendientes o aprobadas. |
-| **ResponsableAmbiente** | Encargado o custodio físico de los ambientes (laboratorista, personal de mantenimiento). Consulta el calendario general de reservas y la lista de ambientes para la apertura de puertas y supervisión operativa. |
+| **ResponsableAmbiente** | Encargado o custodio físico de los ambientes (laboratorista, personal de mantenimiento). Consulta el listado general de reservas y la lista de ambientes para la apertura de puertas y supervisión operativa. Puede registrar reservas a su nombre y cancelar cualquier reserva. No aprueba ni rechaza (RN-05) ni crea ambientes o usuarios. |
 | **Administrador** | Responsable de la gestión académica de espacios. Aprueba o rechaza solicitudes (RN-05), registra nuevos ambientes y usuarios, cancela cualquier reserva y analiza los indicadores del dashboard. |
 
 ---
@@ -40,8 +40,8 @@ La universidad necesita gestionar y ordenar el uso compartido de sus ambientes f
 |---|---|---|---|---|
 | **CU-01** | Registrar usuario | Administrador | RF-01, RN-02 | Registra un nuevo usuario asignándole rol y contraseña inicial con hash. |
 | **CU-02** | Registrar ambiente | Administrador | RF-02, RN-02 | Registra aulas, laboratorios o auditorios con su capacidad y ubicación. |
-| **CU-03** | Registrar reserva | Solicitante | RF-03, RN-01..RN-04 | Crea una solicitud en estado Pendiente validando rango horario y disponibilidad. |
-| **CU-04** | Validar disponibilidad | Solicitante | RF-04, RN-01 | Comprueba en tiempo real si un horario está libre de cruces con reservas aprobadas. |
+| **CU-03** | Registrar reserva | Solicitante / Responsable | RF-03, RN-01..RN-04 | Crea una solicitud en estado Pendiente validando rango horario y disponibilidad. |
+| **CU-04** | Validar disponibilidad | Solicitante / Responsable | RF-04, RN-01 | Comprueba en tiempo real si un horario está libre de cruces con reservas aprobadas. |
 | **CU-05** | Listar reservas | Todos | RF-05 | Administrador y Responsable ven todas; Solicitante ve solo sus propias reservas. |
 | **CU-06** | Ver detalle de reserva | Todos | RF-06 | Muestra datos completos. Si un Solicitante consulta una ajena, recibe 404. |
 | **CU-07** | Cambiar estado de reserva | Administrador / Usuario | RF-07, RN-01, RN-05, RN-06 | Administrador aprueba o rechaza. El Solicitante cancela solo las suyas; Responsable y Administrador, cualquiera. |
@@ -84,6 +84,7 @@ flowchart LR
 
     R --> CU09
     R --> CU10
+    R --> CU03
     R --> CU05
     R --> CU06
     R --> CU07
@@ -178,7 +179,7 @@ classDiagram
         +HorariosSeCruzan(i1, f1, i2, f2) bool
         +Aprobar(rolOperador, haySolapamiento)
         +Rechazar(rolOperador)
-        +Cancelar(rolOperador, solicitanteId)
+        +Cancelar()
     }
 
     Usuario "1" --> "0..*" Reserva : solicita
@@ -233,8 +234,8 @@ stateDiagram-v2
     [*] --> Pendiente : Registro inicial (RF-03)
     Pendiente --> Aprobada : Administrador aprueba (RN-05, RN-01)
     Pendiente --> Rechazada : Administrador rechaza (RN-05)
-    Pendiente --> Cancelada : Solicitante o Administrador cancela
-    Aprobada --> Cancelada : Solicitante o Administrador cancela
+    Pendiente --> Cancelada : Cancela (Solicitante solo la suya; Responsable o Administrador, cualquiera)
+    Aprobada --> Cancelada : Cancela (Solicitante solo la suya; Responsable o Administrador, cualquiera)
     Rechazada --> [*] : Inmutable (RN-06)
     Cancelada --> [*] : Fin de ciclo
 ```
