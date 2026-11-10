@@ -51,7 +51,7 @@ Este documento resume los conceptos clave, flujos de ejecución de extremo a ext
    > *Respuesta:* SHA-256 o MD5 son funciones rápidas diseñadas para checksums, vulnerables a ataques de fuerza bruta masiva y tablas arcoíris (rainbow tables). PBKDF2 es una función de derivación de claves intencionalmente costosa que utiliza miles de iteraciones (100,000) y una sal criptográfica única por usuario, haciendo inviables los ataques de diccionario.
 
 9. **¿Cómo se distingue y autentica al Administrador y a los demás roles en el sistema?**  
-   > *Respuesta:* Mediante Claims incluidos dentro del payload del JWT (`ClaimTypes.Role`). El backend valida el rol con atributos `[Authorize(Roles = "Administrador")]` y en el dominio mediante `Reserva.Aprobar/Rechazar(rolOperador)`.
+   > *Respuesta:* Mediante Claims incluidos dentro del payload del JWT (`ClaimTypes.Role`). Las acciones se protegen con `[Authorize]` en el controlador (token obligatorio) y la regla de rol se valida en la capa de aplicación y en el dominio: `Reserva.Aprobar/Rechazar(rolOperador)` solo acepta `Administrador` (RN-05), y `ReservaService` restringe al Solicitante a sus propias reservas.
 
 10. **¿Dónde se almacena el token en el navegador y qué implicaciones de seguridad tiene?**  
     > *Respuesta:* En `sessionStorage`. Esto garantiza que la sesión expire automáticamente al cerrar la pestaña o el navegador, mitigando el riesgo de retención permanente que tiene `localStorage`. El riesgo latente es XSS, mitigado sanitizando entradas, utilizando TypeScript y evitando inyecciones de HTML no confiable.
@@ -74,6 +74,21 @@ Este documento resume los conceptos clave, flujos de ejecución de extremo a ext
     > 2. Almacenar tokens de actualización (Refresh Tokens) en cookies seguras `HttpOnly`, `Secure` y `SameSite=Strict` con rotación automática.
     > 3. Implementar limitación de tasa de solicitudes (Rate Limiting) y bloqueo temporal de cuentas ante intentos fallidos reiterados.
     > 4. Mecanismo de lista negra (Revocation List / Redis) para invalidar tokens JWT antes de su expiración ante cierres forzados.
+
+---
+
+### Reglas de negocio: aprobación y cancelación
+16. **¿Quién puede aprobar o rechazar una reserva y dónde se garantiza?**
+    > *Respuesta:* Solo el Administrador (RN-05). Se valida en el dominio (`Reserva.Aprobar/Rechazar` recibe el rol del operador) y en `ReservaService`. Si un Solicitante lo intenta, la API responde 403. Está probado en `Aprobar_RolNoAdministrador_Falla_RN05` y `CambiarEstado_AprobarSinSerAdministrador_Falla_RN05`.
+
+17. **¿Quién puede cancelar una reserva?**
+    > *Respuesta:* El Solicitante solo las suyas (si intenta cancelar otra recibe 403 «Solo puedes cancelar tus propias reservas.»). El Responsable de ambiente y el Administrador pueden cancelar cualquier reserva. En todos los casos se usa `reserva.Cancelar()`, que respeta RN-06: una reserva Rechazada no se puede cancelar ni modificar.
+
+18. **¿Por qué el Responsable puede cancelar cualquier reserva y no solo las de sus ambientes?**
+    > *Respuesta:* Es una limitación conocida y documentada: en el modelo actual el Responsable no está vinculado a ambientes específicos, así que no hay base para restringirlo. Como mejora futura se agregaría la relación Responsable–Ambiente y se limitaría la cancelación a sus ambientes.
+
+19. **¿Qué diferencia hay entre una reserva Rechazada y una Cancelada?**
+    > *Respuesta:* Rechazada es la decisión del Administrador sobre una solicitud (estado final, RN-06). Cancelada es la anulación posterior por quien tiene permiso para hacerlo. Ambas dejan de ocupar el ambiente; solo las Aprobadas bloquean horario (RN-01).
 
 ---
 
@@ -118,21 +133,27 @@ Para dar cumplimiento riguroso al principio de **responsabilidad única** y **re
 
 ---
 
-## 5. Checklist de Capturas para el Informe y Diapositivas
+## 5. Capturas de evidencia (completadas)
 
-Asegúrate de tomar las siguientes capturas para documentar tu sustentación (recuerda verificar que no queden contraseñas ni claves visibles):
+Las capturas están en `docs/capturas/` y enlazadas en `docs/EVIDENCIA_PRUEBAS.md`. Verificado que no muestran contraseñas, `Jwt:Key` ni cadena de conexión.
 
-- [ ] **1. Pantalla de Login en modo claro:** Con los campos de entrada, íconos y chips de demostración visibles.
-- [ ] **2. Pantalla de Login en modo oscuro:** Mostrando la coherencia cromática y contraste adecuado.
-- [ ] **3. Login con validación de error:** Mostrando el mensaje de credenciales incorrectas.
-- [ ] **4. Login responsivo en dispositivo móvil (375 px):** Inspección de dispositivo mostrando adaptación vertical.
-- [ ] **5. Acceso de demostración «Usuario inactivo»:** Pulsando el chip de Pedro Salas y visualizando el mensaje de cuenta desactivada.
-- [ ] **6. Barra superior institucional en modo claro y oscuro:** Insignia UPLA, título y alternador de tema.
-- [ ] **7. Menú de usuario desplegado:** Menú accesible abierto con opciones de Configuración, Contraseña y Cerrar sesión.
-- [ ] **8. Dashboard analítico en modo oscuro:** Tarjetas estadísticas con bordes de color, gráfico cronológico y ranking.
-- [ ] **9. Vista del Solicitante («Mis reservas») vs Vista del Administrador:** Comparativa demostrando que el Solicitante no ve Dashboard ni opciones de otros usuarios.
-- [ ] **10. Intento no autorizado 403:** Demostración en consola o Swagger al intentar aprobar con rol Solicitante.
-- [ ] **11. Pantalla de Configuración (`/configuracion`):** Datos del usuario en solo lectura y selector de tema.
-- [ ] **12. Pantalla de Cambio de Contraseña (`/cambiar-contrasena`):** Validación reactiva de reglas de contraseña.
-- [ ] **13. Terminal con `dotnet test`:** Salida limpia mostrando las **41 pruebas unitarias en verde**.
-- [ ] **14. Swagger UI interactivo:** Vista de endpoints con botón de autenticación `Authorize` (Bearer JWT).
+| N.º | Tema | Captura(s) |
+|---|---|---|
+| 1 | Login modo claro | `A1-login-claro.png` |
+| 2 | Login modo oscuro | `A2-login-oscuro.png` |
+| 3 | Login con error de credenciales | `A3-login-error-credenciales.png` |
+| 4 | Login en móvil | `A5-login-movil.png` |
+| 5 | Usuario inactivo | `A4-login-usuario-inactivo.png` |
+| 6 | Campos obligatorios en login | `A6`, `A7` |
+| 7 | Menú de usuario | `B5-menu-usuario.png` |
+| 8 | Dashboard (claro y oscuro) | `D1`, `D2` |
+| 9 | Vista Solicitante vs Administrador | `B1`, `B2` vs `D3`, `D3b` |
+| 10 | Intento no autorizado 401/403/404 | `E2`, `E4` |
+| 11 | Configuración | `B7-configuracion.png` |
+| 12 | Cambio de contraseña | `B6-cambiar-contrasena.png` |
+| 13 | `dotnet test` con 41 pruebas | `E1-dotnet-test.png` |
+| 14 | Swagger con Authorize y 200 | `E5`, `E6` |
+| 15 | RN-01 y RN-04 en la interfaz | `B3`, `B4` |
+| 16 | Aprobación con confirmación | `D4`, `D5`, `D6` |
+| 17 | Rol Responsable | `C1`–`C6` |
+| 18 | Repositorio, commits y ramas | `E7`, `E8`, `E9` |

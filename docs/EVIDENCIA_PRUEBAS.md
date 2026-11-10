@@ -2,7 +2,9 @@
 
 Este documento contiene la matriz de pruebas unitarias automáticas (41 pruebas en verde) y las pruebas manuales de verificación de API mediante PowerShell.
 
-> **Nota:** La columna **Obtenido** se deja intencionalmente vacía para que el estudiante la complete al momento de ejecutar las pruebas en su entorno local y capturar los resultados para el informe.
+> **Resultado global:** `dotnet test` → «Correctas! Con error: 0, Superado: 41, Total: 41». La columna **Obtenido** registra el resultado verificado en el entorno local; las capturas están en `docs/capturas/`.
+
+![41 pruebas superadas](capturas/E1-dotnet-test.png)
 
 ---
 
@@ -18,46 +20,46 @@ dotnet test backend/ReservaUPLA.sln --logger "console;verbosity=normal"
 | Módulo / Prueba | Entrada y escenario de prueba | Comportamiento Esperado | Obtenido |
 |---|---|---|---|
 | **Regla RN-01: Sin solapamiento** | | | |
-| `Crear_HorarioCruzado_Falla_RN01` | Intento de reserva 09:00–11:00 en ambiente con reserva ya aprobada en ese rango. | Falla con código RN-01, tipo Conflicto (409), no persiste. | |
-| `Crear_HorarioLibre_Exito_RN01` | Intento de reserva en horario sin solapamientos. | Éxito, estado Pendiente. | |
-| `CambiarEstado_AprobarConHorarioCruzado_Falla_RN01` | Administrador aprueba una reserva que colisiona con otra aprobada posteriormente. | Falla RN-01, permanece en estado Pendiente. | |
-| `Aprobar_ConSolapamiento_Falla_RN01` | Llamada a `Reserva.Aprobar` con flag `haySolapamiento: true`. | Falla validación de dominio RN-01. | |
-| `HorariosSeCruzan_CasosVarios_DevuelveLoEsperado_RN01` (4 teorías) | Casos: (08-10 vs 09-11), (09-10 vs 08-12), (08-09 vs 09-10 frontera), (11-12 vs 08-10 disjuntos). | Evalúa exactamente: `true`, `true`, `false`, `false`. | |
+| `Crear_HorarioCruzado_Falla_RN01` | Intento de reserva 09:00–11:00 en ambiente con reserva ya aprobada en ese rango. | Falla con código RN-01, tipo Conflicto (409), no persiste. | ✅ Superada |
+| `Crear_HorarioLibre_Exito_RN01` | Intento de reserva en horario sin solapamientos. | Éxito, estado Pendiente. | ✅ Superada |
+| `CambiarEstado_AprobarConHorarioCruzado_Falla_RN01` | Administrador aprueba una reserva que colisiona con otra aprobada posteriormente. | Falla RN-01, permanece en estado Pendiente. | ✅ Superada |
+| `Aprobar_ConSolapamiento_Falla_RN01` | Llamada a `Reserva.Aprobar` con flag `haySolapamiento: true`. | Falla validación de dominio RN-01. | ✅ Superada |
+| `HorariosSeCruzan_CasosVarios_DevuelveLoEsperado_RN01` (4 teorías) | Casos: (08-10 vs 09-11), (09-10 vs 08-12), (08-09 vs 09-10 frontera), (11-12 vs 08-10 disjuntos). | Evalúa exactamente: `true`, `true`, `false`, `false`. | ✅ Superada |
 | **Regla RN-02: Campos obligatorios** | | | |
-| `Crear_MotivoVacio_Falla_RN02` (Dominio) | Creación de reserva con motivo vacío o espacios en blanco. | Falla validación de dominio RN-02. | |
-| `Crear_MotivoVacio_Falla_RN02` (Aplicación) | `ReservaCrearDto` con motivo en blanco enviado a `ReservaService`. | Devuelve `Result.Falla` con código RN-02. | |
+| `Crear_MotivoVacio_Falla_RN02` (Dominio) | Creación de reserva con motivo vacío o espacios en blanco. | Falla validación de dominio RN-02. | ✅ Superada |
+| `Crear_MotivoVacio_Falla_RN02` (Aplicación) | `ReservaCrearDto` con motivo en blanco enviado a `ReservaService`. | Devuelve `Result.Falla` con código RN-02. | ✅ Superada |
 | **Regla RN-03: Hora fin mayor que hora inicio** | | | |
-| `Crear_HoraFinIgualAInicio_Falla_RN03` | Rango horario con inicio y fin iguales (ej. 09:00 a 09:00). | Falla con código RN-03. | |
-| `Crear_HoraFinNoMayorQueInicio_Falla_RN03` (2 teorías) | Rango invertido (10:00 a 09:00) y rango idéntico (09:00 a 09:00). | Falla en dominio con código RN-03. | |
+| `Crear_HoraFinIgualAInicio_Falla_RN03` | Rango horario con inicio y fin iguales (ej. 09:00 a 09:00). | Falla con código RN-03. | ✅ Superada |
+| `Crear_HoraFinNoMayorQueInicio_Falla_RN03` (2 teorías) | Rango invertido (10:00 a 09:00) y rango idéntico (09:00 a 09:00). | Falla en dominio con código RN-03. | ✅ Superada |
 | **Regla RN-04: Horario permitido (07:00 a 22:00)** | | | |
-| `Crear_FueraDeHorario_Falla_RN04` (2 teorías) | Rangos: 06:00 a 08:00 y 21:00 a 23:00 en servicio. | Falla con código RN-04. | |
-| `Crear_FueraDeHorarioPermitido_Falla_RN04` (2 teorías) | Rangos: 06:30 a 08:00 y 21:00 a 22:30 en entidad. | Falla en dominio con código RN-04. | |
-| `Crear_HorarioEnLosLimites_Exito_RN04` | Rango exacto límite de 07:00 a 22:00. | Creación exitosa en estado Pendiente. | |
+| `Crear_FueraDeHorario_Falla_RN04` (2 teorías) | Rangos: 06:00 a 08:00 y 21:00 a 23:00 en servicio. | Falla con código RN-04. | ✅ Superada |
+| `Crear_FueraDeHorarioPermitido_Falla_RN04` (2 teorías) | Rangos: 06:30 a 08:00 y 21:00 a 22:30 en entidad. | Falla en dominio con código RN-04. | ✅ Superada |
+| `Crear_HorarioEnLosLimites_Exito_RN04` | Rango exacto límite de 07:00 a 22:00. | Creación exitosa en estado Pendiente. | ✅ Superada |
 | **Regla RN-05: Solo Administrador aprueba/rechaza** | | | |
-| `Aprobar_Administrador_Exito_RN05` | Operador con rol `Administrador` aprueba reserva pendiente. | Éxito, estado transiciona a Aprobada. | |
-| `Aprobar_RolNoAdministrador_Falla_RN05` (2 teorías) | Roles `Solicitante` y `ResponsableAmbiente` intentan aprobar en dominio. | Falla con código RN-05. | |
-| `Rechazar_RolNoAdministrador_Falla_RN05` (2 teorías) | Roles `Solicitante` y `ResponsableAmbiente` intentan rechazar en dominio. | Falla con código RN-05. | |
-| `CambiarEstado_AprobarSinSerAdministrador_Falla_RN05` | Solicitante intenta aprobar mediante `ReservaService`. | Falla con error de tipo `Prohibido` (403) y código RN-05. | |
-| `CambiarEstado_AdministradorAprueba_Exito_RN05` | Administrador aprueba mediante `ReservaService`. | Éxito, persiste una vez en repositorio. | |
+| `Aprobar_Administrador_Exito_RN05` | Operador con rol `Administrador` aprueba reserva pendiente. | Éxito, estado transiciona a Aprobada. | ✅ Superada |
+| `Aprobar_RolNoAdministrador_Falla_RN05` (2 teorías) | Roles `Solicitante` y `ResponsableAmbiente` intentan aprobar en dominio. | Falla con código RN-05. | ✅ Superada |
+| `Rechazar_RolNoAdministrador_Falla_RN05` (2 teorías) | Roles `Solicitante` y `ResponsableAmbiente` intentan rechazar en dominio. | Falla con código RN-05. | ✅ Superada |
+| `CambiarEstado_AprobarSinSerAdministrador_Falla_RN05` | Solicitante intenta aprobar mediante `ReservaService`. | Falla con error de tipo `Prohibido` (403) y código RN-05. | ✅ Superada |
+| `CambiarEstado_AdministradorAprueba_Exito_RN05` | Administrador aprueba mediante `ReservaService`. | Éxito, persiste una vez en repositorio. | ✅ Superada |
 | **Regla RN-06: Inmutabilidad de reserva rechazada** | | | |
-| `Aprobar_ReservaRechazada_Falla_RN06` | Intento de aprobar reserva en estado Rechazada. | Falla con código RN-06. | |
-| `Rechazar_ReservaYaRechazada_Falla_RN06` | Intento de volver a rechazar reserva ya Rechazada. | Falla con código RN-06. | |
-| `Cancelar_ReservaRechazada_Falla_RN06` | Intento de cancelar reserva en estado Rechazada. | Falla con código RN-06. | |
-| `CambiarEstado_ModificarReservaRechazada_Falla_RN06` | Intento de modificar estado de reserva rechazada en servicio. | Falla con tipo Conflicto (409) y código RN-06. | |
+| `Aprobar_ReservaRechazada_Falla_RN06` | Intento de aprobar reserva en estado Rechazada. | Falla con código RN-06. | ✅ Superada |
+| `Rechazar_ReservaYaRechazada_Falla_RN06` | Intento de volver a rechazar reserva ya Rechazada. | Falla con código RN-06. | ✅ Superada |
+| `Cancelar_ReservaRechazada_Falla_RN06` | Intento de cancelar reserva en estado Rechazada. | Falla con código RN-06. | ✅ Superada |
+| `CambiarEstado_ModificarReservaRechazada_Falla_RN06` | Intento de modificar estado de reserva rechazada en servicio. | Falla con tipo Conflicto (409) y código RN-06. | ✅ Superada |
 | **Autenticación, Roles y Seguridad (LOGIN)** | | | |
-| `IniciarSesion_CredencialesCorrectas_DevuelveToken_LOGIN` | Correo y contraseña válidos de usuario activo. | Devuelve token JWT con claims de ID, nombre, correo y rol. | |
-| `IniciarSesion_ContrasenaIncorrecta_DevuelveMensajeGenerico_LOGIN` | Correo existente con contraseña incorrecta. | Mensaje genérico «Correo o contraseña incorrectos» (evita enumeración). | |
-| `IniciarSesion_CorreoInexistente_DevuelveMismoMensajeGenerico_LOGIN` | Correo no registrado en el sistema. | Mismo mensaje genérico «Correo o contraseña incorrectos». | |
-| `IniciarSesion_UsuarioInactivo_NoEntra_LOGIN` | Credenciales de usuario desactivado (`Activo = false`). | Falla con mensaje explícito de cuenta desactivada. | |
-| `IniciarSesionDemo_RolInactivo_FallaIgualQueLogin_LOGIN` | Acceso demo sobre rol con cuenta inactiva. | Mismo mensaje de rechazo de cuenta desactivada. | |
-| `PasswordHasher_VerificaBien_YDosHashesSonDistintos_LOGIN` | Hashing PBKDF2 de una misma contraseña dos veces. | Ambos hashes son distintos por sales aleatorias y ambos verifican con éxito. | |
-| `CambiarContrasena_ActualIncorrecta_Falla_LOGIN` | Cambio de contraseña con clave actual errónea. | Falla indicando que la contraseña actual no es correcta. | |
-| `CambiarContrasena_MismaContrasena_Falla_LOGIN` | Nueva contraseña idéntica a la actual. | Falla indicando que la nueva debe ser distinta. | |
-| `CambiarContrasena_DatosValidos_GuardaHashNuevo_LOGIN` | Contraseña actual válida y nueva contraseña que cumple reglas. | Éxito, persiste el nuevo hash PBKDF2. | |
+| `IniciarSesion_CredencialesCorrectas_DevuelveToken_LOGIN` | Correo y contraseña válidos de usuario activo. | Devuelve token JWT con claims de ID, nombre, correo y rol. | ✅ Superada |
+| `IniciarSesion_ContrasenaIncorrecta_DevuelveMensajeGenerico_LOGIN` | Correo existente con contraseña incorrecta. | Mensaje genérico «Correo o contraseña incorrectos» (evita enumeración). | ✅ Superada |
+| `IniciarSesion_CorreoInexistente_DevuelveMismoMensajeGenerico_LOGIN` | Correo no registrado en el sistema. | Mismo mensaje genérico «Correo o contraseña incorrectos». | ✅ Superada |
+| `IniciarSesion_UsuarioInactivo_NoEntra_LOGIN` | Credenciales de usuario desactivado (`Activo = false`). | Falla con mensaje explícito de cuenta desactivada. | ✅ Superada |
+| `IniciarSesionDemo_RolInactivo_FallaIgualQueLogin_LOGIN` | Acceso demo sobre rol con cuenta inactiva. | Mismo mensaje de rechazo de cuenta desactivada. | ✅ Superada |
+| `PasswordHasher_VerificaBien_YDosHashesSonDistintos_LOGIN` | Hashing PBKDF2 de una misma contraseña dos veces. | Ambos hashes son distintos por sales aleatorias y ambos verifican con éxito. | ✅ Superada |
+| `CambiarContrasena_ActualIncorrecta_Falla_LOGIN` | Cambio de contraseña con clave actual errónea. | Falla indicando que la contraseña actual no es correcta. | ✅ Superada |
+| `CambiarContrasena_MismaContrasena_Falla_LOGIN` | Nueva contraseña idéntica a la actual. | Falla indicando que la nueva debe ser distinta. | ✅ Superada |
+| `CambiarContrasena_DatosValidos_GuardaHashNuevo_LOGIN` | Contraseña actual válida y nueva contraseña que cumple reglas. | Éxito, persiste el nuevo hash PBKDF2. | ✅ Superada |
 | **Aislamiento de Datos por Rol** | | | |
-| `Listar_Solicitante_SoloVeLasSuyas` | Consulta de listado por usuario con rol Solicitante. | Retorna exclusivamente reservas donde `UsuarioId == idSolicitante`. | |
-| `Cancelar_ReservaAjena_Falla` | Solicitante intenta cancelar una reserva perteneciente a otro usuario. | Falla con error de recurso no encontrado o no autorizado. | |
-| `Crear_Solicitante_IgnoraUsuarioIdDelCliente` | Solicitante envía en el payload el ID de otro usuario. | El servicio ignora el ID del payload y asocia la reserva al ID del token. | |
+| `Listar_Solicitante_SoloVeLasSuyas` | Consulta de listado por usuario con rol Solicitante. | Retorna exclusivamente reservas donde `UsuarioId == idSolicitante`. | ✅ Superada |
+| `Cancelar_ReservaAjena_Falla` | Solicitante intenta cancelar una reserva perteneciente a otro usuario. | Falla con error de recurso no encontrado o no autorizado. | ✅ Superada |
+| `Crear_Solicitante_IgnoraUsuarioIdDelCliente` | Solicitante envía en el payload el ID de otro usuario. | El servicio ignora el ID del payload y asocia la reserva al ID del token. | ✅ Superada |
 
 ---
 
@@ -187,11 +189,30 @@ if ($reservaPendiente) {
 
 | N° | Escenario de Verificación | Entrada / Método HTTP | Comportamiento Esperado | Obtenido |
 |---|---|---|---|---|
-| 1 | Login exitoso | `POST /api/auth/login` con credenciales válidas de Marta Quispe | HTTP 200 con token JWT y datos de perfil. | |
-| 2 | Login con contraseña errónea | `POST /api/auth/login` con contraseña inválida | HTTP 400 «Correo o contraseña incorrectos». | |
-| 3 | Login con cuenta desactivada | `POST /api/auth/login` para `pedro.salas@ejemplo.edu.pe` | HTTP 400 «Tu cuenta está desactivada. Comunícate con el administrador.». | |
-| 4 | Petición sin token de autenticación | `GET /api/reservas` sin cabecera `Authorization` | HTTP 401 Unauthorized. | |
-| 5 | Solicitante intenta aprobar reserva | `PATCH /api/reservas/{id}/estado` con token de rol `Solicitante` | HTTP 403 Forbidden (RN-05). | |
-| 6 | Solicitante consulta reserva ajena | `GET /api/reservas/{id}` con ID de reserva de otro usuario | HTTP 404 Not Found (evita enumeración de recursos). | |
-| 7 | Cambio de contraseña con clave actual incorrecta | `PATCH /api/auth/contrasena` con `contrasenaActual` equivocada | HTTP 400 «La contraseña actual no es correcta.». | |
-| 8 | Aprobación exitosa por Administrador | `PATCH /api/reservas/{id}/estado` con token de Administrador | HTTP 200 con estado `Aprobada`. | |
+| 1 | Login exitoso | `POST /api/auth/login` con credenciales válidas de Marta Quispe | HTTP 200 con token JWT y datos de perfil. | ✅ HTTP 200 con token JWT y perfil (Marta Quispe, Administrador). Ver D1. |
+| 2 | Login con contraseña errónea | `POST /api/auth/login` con contraseña inválida | HTTP 400 «Correo o contraseña incorrectos». | ✅ HTTP 400 «Correo o contraseña incorrectos.». Ver A3. |
+| 3 | Login con cuenta desactivada | `POST /api/auth/login` para `pedro.salas@ejemplo.edu.pe` | HTTP 400 «Tu cuenta está desactivada. Comunícate con el administrador.». | ✅ «Tu cuenta está desactivada. Comunícate con el administrador.». Ver A4. |
+| 4 | Petición sin token de autenticación | `GET /api/reservas` sin cabecera `Authorization` | HTTP 401 Unauthorized. | ✅ HTTP 401 Unauthorized. Ver E2. |
+| 5 | Solicitante intenta aprobar reserva | `PATCH /api/reservas/{id}/estado` con token de rol `Solicitante` | HTTP 403 Forbidden (RN-05). | ✅ HTTP 403 Forbidden (Ana Torres intenta aprobar). Ver E4. |
+| 6 | Solicitante consulta reserva ajena | `GET /api/reservas/{id}` con ID de reserva de otro usuario | HTTP 404 Not Found (evita enumeración de recursos). | ✅ HTTP 404 Not Found (reserva de Luis Rojas). Ver E4. |
+| 7 | Cambio de contraseña con clave actual incorrecta | `PATCH /api/auth/contrasena` con `contrasenaActual` equivocada | HTTP 400 «La contraseña actual no es correcta.». | Cubierto por la prueba automática `CambiarContrasena_ActualIncorrecta_Falla_LOGIN` (superada). Formulario en B6. |
+| 8 | Aprobación exitosa por Administrador | `PATCH /api/reservas/{id}/estado` con token de Administrador | HTTP 200 con estado `Aprobada`. | ✅ Reserva pasa a Aprobada con confirmación previa. Ver D4, D5 y D6. |
+
+---
+
+## 3. Evidencia en la interfaz (pruebas manuales)
+
+| Escenario | Resultado obtenido | Captura |
+|---|---|---|
+| Login con credenciales incorrectas | Mensaje genérico «Correo o contraseña incorrectos.» | ![A3](capturas/A3-login-error-credenciales.png) |
+| Login con usuario inactivo | «Tu cuenta está desactivada…» | ![A4](capturas/A4-login-usuario-inactivo.png) |
+| Campos obligatorios (RN-02) en login | Mensajes de campo requerido | ![A6](capturas/A6-login-obligatorios.png) ![A7](capturas/A7-login-obligatorio-clave.png) |
+| Solapamiento (RN-01) | «Ya existe una reserva Aprobada para ese ambiente en esa fecha y horario. Elige otro horario u otro ambiente.» | ![B3](capturas/B3-rn01-solapamiento.png) |
+| Horario permitido (RN-04) | «La hora de inicio no puede ser antes de las 07:00.» | ![B4](capturas/B4-rn04-horario.png) |
+| Solicitante ve solo sus reservas | Listado filtrado por usuario | ![B1](capturas/B1-mis-reservas-claro.png) |
+| Responsable sin aprobar ni crear ambientes (RN-05) | Sin botones Aprobar/Rechazar ni formulario de ambientes | ![C3](capturas/C3-ambientes-oscuro.png) ![C6](capturas/C6-detalle-sin-aprobar.png) |
+| Administrador aprueba con confirmación | Modal de confirmación y estado Aprobada | ![D5](capturas/D5-modal-aprobar.png) ![D6](capturas/D6-aprobada.png) |
+| Dashboard (RF-08) | 11 reservas: 2 pendientes, 6 aprobadas, 2 rechazadas; ambiente más usado Aula 101 | ![D1](capturas/D1-dashboard-claro.png) |
+| Seguridad API: 401 / 403 / 404 | Códigos esperados | ![E2](capturas/E2-401-sin-token.png) ![E4](capturas/E4-403-404.png) |
+| Swagger con JWT | Authorize + GET /api/reservas → 200 | ![E5](capturas/E5-swagger-authorize.png) ![E6](capturas/E6-swagger-200.png) |
+| Repositorio, commits y ramas | Flujo main/develop/feature | ![E7](capturas/E7-github-repo.png) ![E8](capturas/E8-github-commits.png) ![E9](capturas/E9-github-ramas.png) |
